@@ -18,6 +18,9 @@ test('every basketball pose has usable frames inside its credited source image',
           const png = readFileSync(resolve('public', frame.image));
           assert.equal(png.toString('ascii', 12, 16), 'IHDR');
           const [x,y,w,h] = frame.rect;
+          // Visual inspection of the source sheets: row 2 faces right, row 6 left.
+          assert.equal(y/h,direction==='left'?6:2,`${entry.name??frame.image} ${action} faces the wrong way`);
+          assert.ok((frame.ballAnchor[0]-frame.pivot[0])*(direction==='right'?1:-1)>0,'ball belongs in front of the player');
           assert.ok(x >= 0 && y >= 0 && w > 0 && h > 0 && x+w <= png.readUInt32BE(16) && y+h <= png.readUInt32BE(20));
           assert.ok(frame.durationMs > 0);
           assert.ok([...frame.pivot,...frame.ballAnchor].every(Number.isFinite));

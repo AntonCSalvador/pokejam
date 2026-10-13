@@ -1,5 +1,7 @@
 # PokéJam sprite credits
 
+Font: [Press Start 2P by CodeMan38](https://fonts.google.com/specimen/Press+Start+2P), distributed under the SIL Open Font License 1.1. Font and `OFL.txt` are retained in `assets/fonts/`.
+
 Source: [PMDCollab/SpriteCollab](https://github.com/PMDCollab/SpriteCollab), revision `6e4cbc000566b1628daff88c317e15c907acf98f`.
 
 - Tauros (0128), Machamp (0068): original CHUNSOFT sprites. Upstream per-action records mark terms **Unspecified**.
