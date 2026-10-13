@@ -24,7 +24,7 @@ export function chooseBotInput(m,id){
   else{
    const mark=m.players[(p.team===0?2:0)+(id%2)];
    target=distance(p,holder)<13?holder:{x:mark.x+(p.team===0?-3:3),y:mark.y};
-   if(distance(p,holder)<T.stealRange&&!p.cooldownMs){input.pressed|=A.PASS;p.facing=holder.x>=p.x?1:-1;}
+   if(distance(p,holder)<T.stealRange&&!p.cooldownMs)input.pressed|=A.PASS;
   }
  }else if(b.mode==='flight'&&b.kind!=='pass'){
   target={x:b.x,y:b.y};

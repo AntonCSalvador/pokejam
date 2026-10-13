@@ -36,6 +36,14 @@ test('stale movement stops; reservations expire at 60 seconds and empty rooms at
 test('room cap, host transfer, malformed axes and input flooding fail safely',()=>{
  const h=harness(),a=h.client();a.send({type:'create'});const w=a.last('welcome');const b=h.client();b.send({type:'join',roomId:w.roomId,slot:2});h.r.disconnect(a.id);b.send({type:'start'});h.advance(3);assert.ok(b.last('snapshot'));
  b.send(controls(b.last('welcome'),1,{x:Infinity}));assert.equal(b.last('error').code,'BAD_MESSAGE');
+ for(let seq=1;seq<=130;seq++)b.send(controls(b.last('welcome'),seq));assert.equal(b.last('error').code,'RATE_LIMIT');
  for(let i=0;i<15;i++){const c=h.client();c.send({type:'create'});assert.ok(c.last('welcome'));}
  const extra=h.client();extra.send({type:'create'});assert.equal(extra.last('error').code,'SERVER_BUSY');
+});
+test('short shoot tap survives a delayed batch and old switch-epoch actions are discarded',()=>{
+ const h=harness(),a=h.client();a.send({type:'create'});const w=a.last('welcome');a.send({type:'start'});h.advance(183);
+ h.wait(75);a.send(controls(w,1,{pressed:A.SHOOT,released:A.SHOOT}));h.advance(3);
+ assert.equal(a.last('snapshot').match.players[0].action,'block');assert.ok(a.last('snapshot').match.players[0].jumpMs>0);
+ a.send(controls(w,2,{pressed:A.SWITCH}));a.send(controls(w,3,{x:1,held:A.SHOOT}));h.advance(3);
+ const switched=a.last('snapshot');assert.equal(switched.slot,1);assert.equal(switched.controlEpoch,w.controlEpoch+1);assert.equal(switched.match.players[1].chargeMs,0);assert.equal(switched.ackSeq,0);
 });

@@ -5,12 +5,17 @@
   "type": "module",
   "scripts": {
     "start": "node server/index.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "test:browser": "node test/browser.mjs",
+    "test:latency": "node test/latency.mjs"
   },
   "engines": {
     "node": ">=24"
   },
   "dependencies": {
     "ws": "8.22.0"
+  },
+  "devDependencies": {
+    "playwright": "1.64.0"
   }
 }

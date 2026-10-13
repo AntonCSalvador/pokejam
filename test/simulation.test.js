@@ -106,3 +106,7 @@ test('bots finish reproducible games without invalid states or endless possessio
   assert.equal(m.phase,'finished',`seed ${seed} stuck at ${m.score}`);assert.ok(m.score[0]+m.score[1]>0);
  }
 });
+test('bot decisions change only decision memory, never authoritative facing or physics',()=>{
+ const m=live();m.tick=2;Object.assign(m.players[2],{x:62,y:28,facing:1});const before=structuredClone(m);
+ chooseBotInput(m,2);before.players[2].bot=structuredClone(m.players[2].bot);assert.deepEqual(m,before);
+});
