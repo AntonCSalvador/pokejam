@@ -141,10 +141,10 @@ Pinned source base: `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/6e
 
 **Produces:** Existing `renderMatch(ctx,match,options)` and `drawPortrait(ctx,key,assets,tick=0)` signatures remain. Court signage/paint, rings, scoreboard labels/colors, player HUD, and winner copy resolve franchise by match side. Default preview uses defaultSelection; a lobby preview can use its selected lineup without modifying server state.
 
-- [ ] Add short headless test using `startServer()` and Edge: configure Sacramento against Toronto over the real socket, start, assert selected team labels and four species survive countdown/live snapshots; render portraits of all 21 species. Assert no browser errors and no missing image requests. Use the same test later for new menu controls.
-- [ ] Run `node test/selection.mjs`; confirm failure on static Chicago/Miami identity.
-- [ ] Replace every hard-coded franchise reference in render/app/HTML with selected identity. Scope rink colors to selected teams; keep ball/hoop geometry and projection unchanged. Use manifest scale values and occupied bounds for portraits; preserve established court scale for the original four unless a visual defect requires adjustment.
-- [ ] Run `node test/selection.mjs`; all assertions pass. Record a reversed-side Sacramento/Toronto court capture for the final visual batch. Commit `feat: render selected franchises and player lineups`.
+- [x] Add short headless test using `startServer()` and Edge: configure Sacramento against Toronto over the real socket, start, assert selected team labels and four species survive countdown/live snapshots; render portraits of all 21 species. Assert no browser errors and no missing image requests. Use the same test later for new menu controls.
+- [x] Run `node test/selection.mjs`; confirm failure on static Chicago/Miami identity.
+- [x] Replace every hard-coded franchise reference in render/app/HTML with selected identity. Scope rink colors to selected teams; keep ball/hoop geometry and projection unchanged. Use manifest scale values and occupied bounds for portraits; preserve established court scale for the original four unless a visual defect requires adjustment.
+- [x] Run `node test/selection.mjs`; all assertions pass. Record a reversed-side Sacramento/Toronto court capture for the final visual batch. Commit `feat: render selected franchises and player lineups`.
 
 ## Task 5: Full arcade screen sequence
 

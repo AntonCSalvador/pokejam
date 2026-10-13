@@ -1,4 +1,4 @@
-import {A,ROSTER,TEAMS,neutral} from './game/data.js';
+import {A,PLAYERS,getTeam,neutral} from './game/data.js';
 import {createMatch,stepMatch} from './game/simulation.js';
 import {chooseBotInput} from './game/bots.js';
 import {loadSprites,renderMatch,drawPortrait,setSoundMuted} from './render.js';
@@ -33,7 +33,7 @@ function updateLobby(){
  $('intro').hidden=true;$('lobby').hidden=!!snapshot;$('slots').replaceChildren();
  $('start').hidden=!session||lobby.host!==session.slot;$('start').disabled=!!lobby.started;
  $('lobby-hint').textContent=session?'Empty spots play as AI. Friends can join either side.':'Choose an available Pokémon to join this court.';
- for(const p of ROSTER){const slot=ROSTER.indexOf(p),state=lobby.slots[slot].state,chosen=session?.slot===slot;const b=document.createElement('button');b.className='slot'+(chosen?' selected':'');b.disabled=!chosen&&state!=='ai';b.setAttribute('aria-label',`${p.name}, ${TEAMS[p.team].name}, ${chosen?'your player':state==='ai'?'available':state}`);
+ for(const [slot,key] of lobby.playerKeys.entries()){const p={...PLAYERS[key],team:Math.floor(slot/2)},state=lobby.slots[slot].state,chosen=session?.slot===slot;const b=document.createElement('button');b.className='slot'+(chosen?' selected':'');b.disabled=!chosen&&state!=='ai';b.setAttribute('aria-label',`${p.name}, ${getTeam(lobby.teamKeys[p.team]).name}, ${chosen?'your player':state==='ai'?'available':state}`);
   const portrait=document.createElement('canvas');portrait.width=220;portrait.height=105;portrait.setAttribute('aria-hidden','true');drawPortrait(portrait.getContext('2d'),p.key,assets);
   const name=document.createElement('strong');name.textContent=p.name;const role=document.createElement('small');role.textContent=p.role+' · '+p.move;const ownership=document.createElement('em');ownership.textContent=chosen?'YOUR PLAYER':state==='ai'?'AI · CLICK TO PLAY':state==='reserved'?'RECONNECTING':state==='pending'?'JOINING':'HUMAN PLAYER';b.append(portrait,name,role,ownership);
   b.onclick=()=>{if(chosen)return;connection.send(session?{type:'claim',slot}:{type:'join',roomId:lobby.roomId,slot});};$('slots').append(b);
@@ -89,12 +89,13 @@ function render(now){
  if(snapshot&&session){const predicted=reconcileLocal(snapshot,pendingInputs);if(localPose&&Math.hypot(predicted.x-localPose.x,predicted.y-localPose.y)<4){predicted.x=localPose.x+(predicted.x-localPose.x)*.55;predicted.y=localPose.y+(predicted.y-localPose.y)*.55;}localPose=predicted;}
  renderMatch(ctx,m,{assets,controlledSlot:session?.slot??-1,reducedMotion:reduced,localPose});
  if(++viewTick%6===0){
+  const teams=m.teamKeys.map(getTeam);document.querySelectorAll('.scoreboard .team').forEach((el,i)=>{el.querySelector('span').textContent=teams[i].city.toUpperCase();el.querySelector('strong').textContent=teams[i].mascot.toUpperCase();el.style.color=teams[i].color;});
   $('chi-score').textContent=String(m.score[0]).padStart(2,'0');$('mia-score').textContent=String(m.score[1]).padStart(2,'0');const seconds=Math.ceil(m.remainingMs/1000);$('clock').textContent=m.overtime?'OT':`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
   $('match-label').textContent=snapshot?(m.overtime?'NEXT BASKET WINS':'ONLINE · 2 ON 2'):'EXHIBITION PREVIEW';$('shot-clock').textContent=`SHOT CLOCK ${Math.ceil(m.shotClockMs/1000)}`;
   $('focus-hint').hidden=!snapshot||m.phase==='finished'||document.activeElement===canvas;
   const overlay=!!snapshot&&['countdown','finished'].includes(m.phase);$('match-overlay').hidden=!overlay;$('rematch').hidden=m.phase!=='finished'||lobby?.host!==session?.slot;
-  if(overlay){$('overlay-title').textContent=m.phase==='countdown'?String(Math.ceil(m.phaseMs/1000)):TEAMS[m.score[0]>m.score[1]?0:1].short+' WINS!';$('overlay-detail').textContent=m.phase==='countdown'?'Get ready to jam.':`${m.score[0]} — ${m.score[1]} · ${lobby?.host===session?.slot?'Run it back?':'Waiting for the host to rematch.'}`;}
-  if(session&&snapshot){const p=m.players[session.slot];$('player-name').textContent=p.name;$('turbo').value=p.turbo;$('meter').value=p.meter;$('signature-name').textContent=p.move.toUpperCase();$('power-hint').textContent=p.meter>=100?'SIGNATURE READY · PRESS L':'Score, assist, steal, block. Fill your meter.';$('court-status').textContent=`YOU: ${p.name.toUpperCase()} · ${TEAMS[p.team].short}`;}
+  if(overlay){$('overlay-title').textContent=m.phase==='countdown'?String(Math.ceil(m.phaseMs/1000)):teams[m.score[0]>m.score[1]?0:1].short+' WINS!';$('overlay-detail').textContent=m.phase==='countdown'?'Get ready to jam.':`${m.score[0]} — ${m.score[1]} · ${lobby?.host===session?.slot?'Run it back?':'Waiting for the host to rematch.'}`;}
+  if(session&&snapshot){const p=m.players[session.slot];$('player-name').textContent=p.name;$('turbo').value=p.turbo;$('meter').value=p.meter;$('signature-name').textContent=p.move.toUpperCase();$('power-hint').textContent=p.meter>=100?'SIGNATURE READY · PRESS L':'Score, assist, steal, block. Fill your meter.';$('court-status').textContent=`YOU: ${p.name.toUpperCase()} · ${teams[p.team].short}`;}
  }
  requestAnimationFrame(render);
 }

@@ -131,6 +131,13 @@ def main():
             manifest.update(dict(pool.map(import_species, SPECIES.items())))
         for key in ('tauros', 'machamp', 'heatmor', 'charizard'):
             manifest[key].update(courtScale=1.85, portraitScale=2.4)
+        for entry in manifest.values():
+            images = {s['image']: Image.open(PUBLIC / s['image']).convert('RGBA') for s in entry['sources']}
+            for directions in entry['animations'].values():
+                for frames in directions.values():
+                    for frame in frames:
+                        x, y, w, h = frame['rect']
+                        frame['bounds'] = list(images[frame['image']].crop((x,y,x+w,y+h)).getchannel('A').getbbox())
         check(manifest)
         manifest_path.write_text(json.dumps(manifest, separators=(',', ':')), encoding='utf-8')
         credits_path = PUBLIC / 'assets/CREDITS.md'
