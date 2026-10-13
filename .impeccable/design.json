@@ -1,0 +1,578 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-13T04:07:12.871Z",
+  "title": "Design System: PokéJam",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Stadium aubergine",
+        "canonical": "#15101e",
+        "tonalRamp": [
+          "oklch(15.00% 0.0288 300.04)",
+          "oklch(26.43% 0.0288 300.04)",
+          "oklch(37.86% 0.0288 300.04)",
+          "oklch(49.29% 0.0288 300.04)",
+          "oklch(60.71% 0.0288 300.04)",
+          "oklch(72.14% 0.0288 300.04)",
+          "oklch(83.57% 0.0288 300.04)",
+          "oklch(95.00% 0.0288 300.04)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Cabinet aubergine",
+        "canonical": "#291d36",
+        "tonalRamp": [
+          "oklch(15.00% 0.0483 305.35)",
+          "oklch(26.43% 0.0483 305.35)",
+          "oklch(37.86% 0.0483 305.35)",
+          "oklch(49.29% 0.0483 305.35)",
+          "oklch(60.71% 0.0483 305.35)",
+          "oklch(72.14% 0.0483 305.35)",
+          "oklch(83.57% 0.0483 305.35)",
+          "oklch(95.00% 0.0483 305.35)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Warm cream",
+        "canonical": "#fff3d7",
+        "tonalRamp": [
+          "oklch(15.00% 0.0388 87.56)",
+          "oklch(26.43% 0.0388 87.56)",
+          "oklch(37.86% 0.0388 87.56)",
+          "oklch(49.29% 0.0388 87.56)",
+          "oklch(60.71% 0.0388 87.56)",
+          "oklch(72.14% 0.0388 87.56)",
+          "oklch(83.57% 0.0388 87.56)",
+          "oklch(95.00% 0.0388 87.56)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted lavender",
+        "canonical": "#cbbbcc",
+        "tonalRamp": [
+          "oklch(15.00% 0.0294 324.07)",
+          "oklch(26.43% 0.0294 324.07)",
+          "oklch(37.86% 0.0294 324.07)",
+          "oklch(49.29% 0.0294 324.07)",
+          "oklch(60.71% 0.0294 324.07)",
+          "oklch(72.14% 0.0294 324.07)",
+          "oklch(83.57% 0.0294 324.07)",
+          "oklch(95.00% 0.0294 324.07)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Plum line",
+        "canonical": "#6c516d",
+        "tonalRamp": [
+          "oklch(15.00% 0.0555 325.25)",
+          "oklch(26.43% 0.0555 325.25)",
+          "oklch(37.86% 0.0555 325.25)",
+          "oklch(49.29% 0.0555 325.25)",
+          "oklch(60.71% 0.0555 325.25)",
+          "oklch(72.14% 0.0555 325.25)",
+          "oklch(83.57% 0.0555 325.25)",
+          "oklch(95.00% 0.0555 325.25)"
+        ]
+      },
+      "gold": {
+        "role": "primary",
+        "displayName": "Cabinet gold",
+        "canonical": "#ffc460",
+        "tonalRamp": [
+          "oklch(15.00% 0.1345 78.44)",
+          "oklch(26.43% 0.1345 78.44)",
+          "oklch(37.86% 0.1345 78.44)",
+          "oklch(49.29% 0.1345 78.44)",
+          "oklch(60.71% 0.1345 78.44)",
+          "oklch(72.14% 0.1345 78.44)",
+          "oklch(83.57% 0.1345 78.44)",
+          "oklch(95.00% 0.1345 78.44)"
+        ]
+      },
+      "mint": {
+        "role": "primary",
+        "displayName": "Control mint",
+        "canonical": "#c9ef93",
+        "tonalRamp": [
+          "oklch(15.00% 0.1247 127.02)",
+          "oklch(26.43% 0.1247 127.02)",
+          "oklch(37.86% 0.1247 127.02)",
+          "oklch(49.29% 0.1247 127.02)",
+          "oklch(60.71% 0.1247 127.02)",
+          "oklch(72.14% 0.1247 127.02)",
+          "oklch(83.57% 0.1247 127.02)",
+          "oklch(95.00% 0.1247 127.02)"
+        ]
+      },
+      "surface-deep": {
+        "role": "neutral",
+        "displayName": "Inset aubergine",
+        "canonical": "#1c1427",
+        "tonalRamp": [
+          "oklch(15.00% 0.0381 302.65)",
+          "oklch(26.43% 0.0381 302.65)",
+          "oklch(37.86% 0.0381 302.65)",
+          "oklch(49.29% 0.0381 302.65)",
+          "oklch(60.71% 0.0381 302.65)",
+          "oklch(72.14% 0.0381 302.65)",
+          "oklch(83.57% 0.0381 302.65)",
+          "oklch(95.00% 0.0381 302.65)"
+        ]
+      },
+      "control": {
+        "role": "neutral",
+        "displayName": "Control plum",
+        "canonical": "#33253d",
+        "tonalRamp": [
+          "oklch(15.00% 0.0464 310.41)",
+          "oklch(26.43% 0.0464 310.41)",
+          "oklch(37.86% 0.0464 310.41)",
+          "oklch(49.29% 0.0464 310.41)",
+          "oklch(60.71% 0.0464 310.41)",
+          "oklch(72.14% 0.0464 310.41)",
+          "oklch(83.57% 0.0464 310.41)",
+          "oklch(95.00% 0.0464 310.41)"
+        ]
+      },
+      "control-hover": {
+        "role": "neutral",
+        "displayName": "Hovered control plum",
+        "canonical": "#4b3654",
+        "tonalRamp": [
+          "oklch(15.00% 0.0569 315.45)",
+          "oklch(26.43% 0.0569 315.45)",
+          "oklch(37.86% 0.0569 315.45)",
+          "oklch(49.29% 0.0569 315.45)",
+          "oklch(60.71% 0.0569 315.45)",
+          "oklch(72.14% 0.0569 315.45)",
+          "oklch(83.57% 0.0569 315.45)",
+          "oklch(95.00% 0.0569 315.45)"
+        ]
+      },
+      "action-ink": {
+        "role": "neutral",
+        "displayName": "Action ink",
+        "canonical": "#301b23",
+        "tonalRamp": [
+          "oklch(15.00% 0.0356 355.51)",
+          "oklch(26.43% 0.0356 355.51)",
+          "oklch(37.86% 0.0356 355.51)",
+          "oklch(49.29% 0.0356 355.51)",
+          "oklch(60.71% 0.0356 355.51)",
+          "oklch(72.14% 0.0356 355.51)",
+          "oklch(83.57% 0.0356 355.51)",
+          "oklch(95.00% 0.0356 355.51)"
+        ]
+      },
+      "action-hover": {
+        "role": "neutral",
+        "displayName": "Hovered cabinet gold",
+        "canonical": "#ffdc8d",
+        "tonalRamp": [
+          "oklch(15.00% 0.1052 86.46)",
+          "oklch(26.43% 0.1052 86.46)",
+          "oklch(37.86% 0.1052 86.46)",
+          "oklch(49.29% 0.1052 86.46)",
+          "oklch(60.71% 0.1052 86.46)",
+          "oklch(72.14% 0.1052 86.46)",
+          "oklch(83.57% 0.1052 86.46)",
+          "oklch(95.00% 0.1052 86.46)"
+        ]
+      },
+      "chicago": {
+        "role": "secondary",
+        "displayName": "Chicago red",
+        "canonical": "#ee4c59",
+        "tonalRamp": [
+          "oklch(15.00% 0.1976 20.23)",
+          "oklch(26.43% 0.1976 20.23)",
+          "oklch(37.86% 0.1976 20.23)",
+          "oklch(49.29% 0.1976 20.23)",
+          "oklch(60.71% 0.1976 20.23)",
+          "oklch(72.14% 0.1976 20.23)",
+          "oklch(83.57% 0.1976 20.23)",
+          "oklch(95.00% 0.1976 20.23)"
+        ]
+      },
+      "chicago-dark": {
+        "role": "secondary",
+        "displayName": "Chicago red dark field",
+        "canonical": "#671f35",
+        "tonalRamp": [
+          "oklch(15.00% 0.1045 5.37)",
+          "oklch(26.43% 0.1045 5.37)",
+          "oklch(37.86% 0.1045 5.37)",
+          "oklch(49.29% 0.1045 5.37)",
+          "oklch(60.71% 0.1045 5.37)",
+          "oklch(72.14% 0.1045 5.37)",
+          "oklch(83.57% 0.1045 5.37)",
+          "oklch(95.00% 0.1045 5.37)"
+        ]
+      },
+      "miami": {
+        "role": "secondary",
+        "displayName": "Miami amber",
+        "canonical": "#ffb33b",
+        "tonalRamp": [
+          "oklch(15.00% 0.1549 73.97)",
+          "oklch(26.43% 0.1549 73.97)",
+          "oklch(37.86% 0.1549 73.97)",
+          "oklch(49.29% 0.1549 73.97)",
+          "oklch(60.71% 0.1549 73.97)",
+          "oklch(72.14% 0.1549 73.97)",
+          "oklch(83.57% 0.1549 73.97)",
+          "oklch(95.00% 0.1549 73.97)"
+        ]
+      },
+      "miami-dark": {
+        "role": "secondary",
+        "displayName": "Miami amber dark field",
+        "canonical": "#803b20",
+        "tonalRamp": [
+          "oklch(15.00% 0.1035 41.06)",
+          "oklch(26.43% 0.1035 41.06)",
+          "oklch(37.86% 0.1035 41.06)",
+          "oklch(49.29% 0.1035 41.06)",
+          "oklch(60.71% 0.1035 41.06)",
+          "oklch(72.14% 0.1035 41.06)",
+          "oklch(83.57% 0.1035 41.06)",
+          "oklch(95.00% 0.1035 41.06)"
+        ]
+      },
+      "boston": {
+        "role": "secondary",
+        "displayName": "Boston green",
+        "canonical": "#7bcd88",
+        "tonalRamp": [
+          "oklch(15.00% 0.1267 148.05)",
+          "oklch(26.43% 0.1267 148.05)",
+          "oklch(37.86% 0.1267 148.05)",
+          "oklch(49.29% 0.1267 148.05)",
+          "oklch(60.71% 0.1267 148.05)",
+          "oklch(72.14% 0.1267 148.05)",
+          "oklch(83.57% 0.1267 148.05)",
+          "oklch(95.00% 0.1267 148.05)"
+        ]
+      },
+      "boston-dark": {
+        "role": "secondary",
+        "displayName": "Boston green dark field",
+        "canonical": "#245a45",
+        "tonalRamp": [
+          "oklch(15.00% 0.0678 165.04)",
+          "oklch(26.43% 0.0678 165.04)",
+          "oklch(37.86% 0.0678 165.04)",
+          "oklch(49.29% 0.0678 165.04)",
+          "oklch(60.71% 0.0678 165.04)",
+          "oklch(72.14% 0.0678 165.04)",
+          "oklch(83.57% 0.0678 165.04)",
+          "oklch(95.00% 0.0678 165.04)"
+        ]
+      },
+      "golden-state": {
+        "role": "secondary",
+        "displayName": "Golden State blue",
+        "canonical": "#80baff",
+        "tonalRamp": [
+          "oklch(15.00% 0.1164 253.45)",
+          "oklch(26.43% 0.1164 253.45)",
+          "oklch(37.86% 0.1164 253.45)",
+          "oklch(49.29% 0.1164 253.45)",
+          "oklch(60.71% 0.1164 253.45)",
+          "oklch(72.14% 0.1164 253.45)",
+          "oklch(83.57% 0.1164 253.45)",
+          "oklch(95.00% 0.1164 253.45)"
+        ]
+      },
+      "golden-state-dark": {
+        "role": "secondary",
+        "displayName": "Golden State blue dark field",
+        "canonical": "#244e8a",
+        "tonalRamp": [
+          "oklch(15.00% 0.1103 257.69)",
+          "oklch(26.43% 0.1103 257.69)",
+          "oklch(37.86% 0.1103 257.69)",
+          "oklch(49.29% 0.1103 257.69)",
+          "oklch(60.71% 0.1103 257.69)",
+          "oklch(72.14% 0.1103 257.69)",
+          "oklch(83.57% 0.1103 257.69)",
+          "oklch(95.00% 0.1103 257.69)"
+        ]
+      },
+      "toronto": {
+        "role": "secondary",
+        "displayName": "Toronto rose",
+        "canonical": "#ed7d9d",
+        "tonalRamp": [
+          "oklch(15.00% 0.1411 3.04)",
+          "oklch(26.43% 0.1411 3.04)",
+          "oklch(37.86% 0.1411 3.04)",
+          "oklch(49.29% 0.1411 3.04)",
+          "oklch(60.71% 0.1411 3.04)",
+          "oklch(72.14% 0.1411 3.04)",
+          "oklch(83.57% 0.1411 3.04)",
+          "oklch(95.00% 0.1411 3.04)"
+        ]
+      },
+      "toronto-dark": {
+        "role": "secondary",
+        "displayName": "Toronto rose dark field",
+        "canonical": "#6b315a",
+        "tonalRamp": [
+          "oklch(15.00% 0.0990 339.78)",
+          "oklch(26.43% 0.0990 339.78)",
+          "oklch(37.86% 0.0990 339.78)",
+          "oklch(49.29% 0.0990 339.78)",
+          "oklch(60.71% 0.0990 339.78)",
+          "oklch(72.14% 0.0990 339.78)",
+          "oklch(83.57% 0.0990 339.78)",
+          "oklch(95.00% 0.0990 339.78)"
+        ]
+      },
+      "minnesota": {
+        "role": "secondary",
+        "displayName": "Minnesota ice blue",
+        "canonical": "#9edce7",
+        "tonalRamp": [
+          "oklch(15.00% 0.0645 209.70)",
+          "oklch(26.43% 0.0645 209.70)",
+          "oklch(37.86% 0.0645 209.70)",
+          "oklch(49.29% 0.0645 209.70)",
+          "oklch(60.71% 0.0645 209.70)",
+          "oklch(72.14% 0.0645 209.70)",
+          "oklch(83.57% 0.0645 209.70)",
+          "oklch(95.00% 0.0645 209.70)"
+        ]
+      },
+      "minnesota-dark": {
+        "role": "secondary",
+        "displayName": "Minnesota ice blue dark field",
+        "canonical": "#284e65",
+        "tonalRamp": [
+          "oklch(15.00% 0.0582 237.13)",
+          "oklch(26.43% 0.0582 237.13)",
+          "oklch(37.86% 0.0582 237.13)",
+          "oklch(49.29% 0.0582 237.13)",
+          "oklch(60.71% 0.0582 237.13)",
+          "oklch(72.14% 0.0582 237.13)",
+          "oklch(83.57% 0.0582 237.13)",
+          "oklch(95.00% 0.0582 237.13)"
+        ]
+      },
+      "sacramento": {
+        "role": "secondary",
+        "displayName": "Sacramento lavender",
+        "canonical": "#c4a0f2",
+        "tonalRamp": [
+          "oklch(15.00% 0.1203 303.86)",
+          "oklch(26.43% 0.1203 303.86)",
+          "oklch(37.86% 0.1203 303.86)",
+          "oklch(49.29% 0.1203 303.86)",
+          "oklch(60.71% 0.1203 303.86)",
+          "oklch(72.14% 0.1203 303.86)",
+          "oklch(83.57% 0.1203 303.86)",
+          "oklch(95.00% 0.1203 303.86)"
+        ]
+      },
+      "sacramento-dark": {
+        "role": "secondary",
+        "displayName": "Sacramento lavender dark field",
+        "canonical": "#503674",
+        "tonalRamp": [
+          "oklch(15.00% 0.1038 301.13)",
+          "oklch(26.43% 0.1038 301.13)",
+          "oklch(37.86% 0.1038 301.13)",
+          "oklch(49.29% 0.1038 301.13)",
+          "oklch(60.71% 0.1038 301.13)",
+          "oklch(72.14% 0.1038 301.13)",
+          "oklch(83.57% 0.1038 301.13)",
+          "oklch(95.00% 0.1038 301.13)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Wordmark",
+        "purpose": "Oversized home title."
+      },
+      "headline": {
+        "displayName": "Screen title",
+        "purpose": "Gold section headings."
+      },
+      "action": {
+        "displayName": "Forward action",
+        "purpose": "Primary arcade buttons."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Readable descriptions and instructions."
+      },
+      "compact-title": {
+        "displayName": "Compact title",
+        "purpose": "Dense franchise and small-screen names."
+      },
+      "label": {
+        "displayName": "Functional label",
+        "purpose": "Ownership and supporting UI; minimum 11px."
+      }
+    },
+    "shadows": [
+      {
+        "name": "cabinet-ambient",
+        "value": "0 12px 35px #08060d80",
+        "purpose": "Enclosure depth."
+      },
+      {
+        "name": "wood-inset",
+        "value": "inset 0 4px 12px #36201970",
+        "purpose": "Franchise board."
+      },
+      {
+        "name": "wordmark",
+        "value": "drop-shadow(0 7px 4px #100c1e)",
+        "purpose": "Home title separation."
+      },
+      {
+        "name": "hero-portrait",
+        "value": "drop-shadow(0 15px 5px #0b071780)",
+        "purpose": "Sprite grounding."
+      }
+    ],
+    "motion": [
+      {
+        "name": "control-response",
+        "value": "background .15s, transform .15s",
+        "purpose": "Button feedback; disabled in reduced motion."
+      },
+      {
+        "name": "hero-float",
+        "value": "idle-rise 3.5s ease-in-out infinite",
+        "purpose": "Home portraits; right delayed 1.75s; disabled in reduced motion."
+      },
+      {
+        "name": "canvas-idle",
+        "value": "drawPortrait(..., reduced ? 0 : now / 16)",
+        "purpose": "Idle frames freeze under reduced motion; live basketball remains."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact-desktop",
+        "value": "1000px"
+      },
+      {
+        "name": "small",
+        "value": "760px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Gold forward action; title uses Play or Resume when a room is retained.",
+      "html": "<button class=\"ds-primary\">CHOOSE PLAYERS</button>",
+      "css": ".ds-primary,.ds-secondary,.ds-quiet{cursor:pointer;border-radius:0;transition:background .15s,transform .15s}.ds-primary:active,.ds-secondary:active,.ds-quiet:active{transform:translateY(2px)}.ds-primary:disabled,.ds-secondary:disabled,.ds-quiet:disabled{opacity:.55;cursor:default;transform:none}.ds-primary:focus-visible,.ds-secondary:focus-visible,.ds-quiet:focus-visible,.ds-input:focus-visible,.ds-card:focus-visible{outline:3px solid var(--mint,#c9ef93);outline-offset:4px}@media(prefers-reduced-motion:reduce){.ds-primary,.ds-secondary,.ds-quiet,.ds-card{transition:none}}.ds-primary{background:var(--gold,#ffc460);color:#301b23;border:2px solid #ffe3a5;padding:12px 18px;font:750 13px/1.8 var(--arcade,monospace)}.ds-primary:hover{background:#ffdc8d}"
+    },
+    {
+      "name": "Secondary action",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Plum alternate or Back action.",
+      "html": "<button class=\"ds-secondary\">BACK</button>",
+      "css": ".ds-primary,.ds-secondary,.ds-quiet{cursor:pointer;border-radius:0;transition:background .15s,transform .15s}.ds-primary:active,.ds-secondary:active,.ds-quiet:active{transform:translateY(2px)}.ds-primary:disabled,.ds-secondary:disabled,.ds-quiet:disabled{opacity:.55;cursor:default;transform:none}.ds-primary:focus-visible,.ds-secondary:focus-visible,.ds-quiet:focus-visible,.ds-input:focus-visible,.ds-card:focus-visible{outline:3px solid var(--mint,#c9ef93);outline-offset:4px}@media(prefers-reduced-motion:reduce){.ds-primary,.ds-secondary,.ds-quiet,.ds-card{transition:none}}.ds-secondary{background:#33253d;color:var(--ink,#fff3d7);border:2px solid #866785;padding:12px 18px;font:750 16px/1.5 system-ui,sans-serif}.ds-secondary:hover{background:#4b3654}"
+    },
+    {
+      "name": "Quiet action",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Compact setting, invite, or slot-claim action.",
+      "html": "<button class=\"ds-quiet\">Copy invite</button>",
+      "css": ".ds-primary,.ds-secondary,.ds-quiet{cursor:pointer;border-radius:0;transition:background .15s,transform .15s}.ds-primary:active,.ds-secondary:active,.ds-quiet:active{transform:translateY(2px)}.ds-primary:disabled,.ds-secondary:disabled,.ds-quiet:disabled{opacity:.55;cursor:default;transform:none}.ds-primary:focus-visible,.ds-secondary:focus-visible,.ds-quiet:focus-visible,.ds-input:focus-visible,.ds-card:focus-visible{outline:3px solid var(--mint,#c9ef93);outline-offset:4px}@media(prefers-reduced-motion:reduce){.ds-primary,.ds-secondary,.ds-quiet,.ds-card{transition:none}}.ds-quiet{background:transparent;color:var(--ink,#fff3d7);border:1px solid var(--line,#6c516d);padding:8px 13px;font:750 12px/1.5 system-ui,sans-serif}.ds-quiet:hover{background:#49344e}.ds-quiet[aria-pressed=true]{border-color:var(--gold,#ffc460)}"
+    },
+    {
+      "name": "Court link field",
+      "kind": "input",
+      "description": "Labeled court link or code on Join.",
+      "html": "<label class=\"ds-field\">Court link or code<input class=\"ds-input\" placeholder=\"Paste your invite here\" autocomplete=\"off\"></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:14px;color:var(--ink,#fff3d7);font:13px/1.5 system-ui,sans-serif}.ds-input{min-width:0;padding:14px;background:#1e1628;border:2px solid #977b9b;border-radius:0;color:var(--ink,#fff3d7);caret-color:var(--gold,#ffc460);font:16px/1.5 system-ui,sans-serif}.ds-input::placeholder{color:var(--muted,#cbbbcc)}.ds-primary:focus-visible,.ds-secondary:focus-visible,.ds-quiet:focus-visible,.ds-input:focus-visible,.ds-card:focus-visible{outline:3px solid var(--mint,#c9ef93);outline-offset:4px}"
+    },
+    {
+      "name": "Selection navigation",
+      "kind": "nav",
+      "refersTo": "selection-nav",
+      "description": "Back, progress, and forward action. Explicit Home exits; Escape keeps the room.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Selection steps\"><button class=\"ds-secondary\">BACK</button><span>2 / 3 ? PLAYERS</span><button class=\"ds-primary\">SEE MATCHUP</button></nav>",
+      "css": ".ds-primary,.ds-secondary,.ds-quiet{cursor:pointer;border-radius:0;transition:background .15s,transform .15s}.ds-primary:active,.ds-secondary:active,.ds-quiet:active{transform:translateY(2px)}.ds-primary:disabled,.ds-secondary:disabled,.ds-quiet:disabled{opacity:.55;cursor:default;transform:none}.ds-primary:focus-visible,.ds-secondary:focus-visible,.ds-quiet:focus-visible,.ds-input:focus-visible,.ds-card:focus-visible{outline:3px solid var(--mint,#c9ef93);outline-offset:4px}@media(prefers-reduced-motion:reduce){.ds-primary,.ds-secondary,.ds-quiet,.ds-card{transition:none}}.ds-primary{background:var(--gold,#ffc460);color:#301b23;border:2px solid #ffe3a5;padding:12px 18px;font:750 13px/1.8 var(--arcade,monospace)}.ds-primary:hover{background:#ffdc8d}.ds-secondary{background:#33253d;color:var(--ink,#fff3d7);border:2px solid #866785;padding:12px 18px;font:750 16px/1.5 system-ui,sans-serif}.ds-secondary:hover{background:#4b3654}.ds-nav{display:flex;align-items:center;justify-content:space-between;padding:19px 28px;border-top:2px solid #ac8053;background:#1c1427;gap:16px}.ds-nav>span{font:11px/1.8 var(--arcade,monospace);color:var(--muted,#cbbbcc)}.ds-nav>button{font-size:11px}@media(max-width:760px){.ds-nav{padding:14px 12px;gap:9px}.ds-nav>span{display:none}.ds-nav>button{padding:10px}}"
+    },
+    {
+      "name": "Selected side tag",
+      "kind": "chip",
+      "description": "Noninteractive tag identifying which side uses a franchise.",
+      "html": "<span class=\"ds-side-tag\">SIDE 1</span>",
+      "css": ".ds-side-tag{font:800 11px/1.6 system-ui,sans-serif;background:var(--gold,#ffc460);color:#301b23;padding:3px 5px;white-space:nowrap}"
+    },
+    {
+      "name": "Franchise choice",
+      "kind": "card",
+      "description": "Original emblem, mascot, city, and explicit selection state.",
+      "html": "<button class=\"ds-card\" aria-label=\"Sacramento Kingdras\" aria-pressed=\"true\"><span class=\"ds-side-tag\">SIDE 1</span><svg class=\"ds-emblem\" viewBox=\"0 0 80 80\" aria-hidden=\"true\"><circle cx=\"40\" cy=\"40\" r=\"38\" fill=\"#1c1427\" stroke=\"currentColor\" stroke-width=\"2\"/><path d=\"M13 26 28 38 40 17 52 38 67 26 59 57 21 57Z M23 64 57 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"4\" stroke-linejoin=\"miter\"/></svg><strong>KINGDRAS</strong><small>Sacramento</small></button>",
+      "css": ".ds-card{cursor:pointer;display:flex;align-items:center;flex-direction:column;min-width:0;position:relative;padding:14px 3px 12px;background:#251b30;border:2px solid #a57b55;border-radius:0;color:var(--ink,#fff3d7);transition:background .15s,transform .15s}.ds-card:hover{background:var(--team-dark,#503674)}.ds-card:active{transform:translateY(2px)}.ds-card[aria-pressed=true]{outline:3px solid var(--gold,#ffc460);outline-offset:2px;background:var(--team-dark,#503674)}.ds-card:disabled{opacity:.65;cursor:default;transform:none}.ds-emblem{width:66px;height:66px;margin-bottom:14px;color:var(--team-color,#c4a0f2)}.ds-card strong{font:800 13px/1.8 system-ui,sans-serif;color:var(--team-color,#c4a0f2);overflow-wrap:anywhere}.ds-card small{font:11px/1.5 system-ui,sans-serif;min-height:32px;margin-top:5px}.ds-card .ds-side-tag{position:absolute;top:-11px;left:50%;transform:translateX(-50%)}.ds-side-tag{font:800 11px/1.6 system-ui,sans-serif;background:var(--gold,#ffc460);color:#301b23;padding:3px 5px;white-space:nowrap}.ds-primary:focus-visible,.ds-secondary:focus-visible,.ds-quiet:focus-visible,.ds-input:focus-visible,.ds-card:focus-visible{outline:3px solid var(--mint,#c9ef93);outline-offset:4px}@media(prefers-reduced-motion:reduce){.ds-primary,.ds-secondary,.ds-quiet,.ds-card{transition:none}}"
+    },
+    {
+      "name": "Ratings and signature",
+      "kind": "custom",
+      "refersTo": "ratings",
+      "description": "Actual catalog ratings with ten segments, numbers, and signature effect.",
+      "html": "<aside class=\"ds-ratings\" aria-label=\"Player ratings\"><h2>Slowking</h2><p class=\"ds-role\">COURT GENERAL</p><div class=\"ds-row\" aria-label=\"Speed: 2 out of 10\"><span>Speed</span><span class=\"ds-bars\" aria-hidden=\"true\"><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><strong>2/10</strong></div><div class=\"ds-row\" aria-label=\"Shooting: 8 out of 10\"><span>Shooting</span><span class=\"ds-bars\" aria-hidden=\"true\"><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i></i><i></i></span><strong>8/10</strong></div><div class=\"ds-row\" aria-label=\"Dunk: 4 out of 10\"><span>Dunk</span><span class=\"ds-bars\" aria-hidden=\"true\"><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i></i><i></i><i></i><i></i><i></i><i></i></span><strong>4/10</strong></div><div class=\"ds-row\" aria-label=\"Steal: 6 out of 10\"><span>Steal</span><span class=\"ds-bars\" aria-hidden=\"true\"><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i></i><i></i><i></i><i></i></span><strong>6/10</strong></div><div class=\"ds-signature\"><small>SIGNATURE ? FULL METER + L</small><strong>King's Assist</strong><p>Fire one faster pass to your teammate. Requires the ball.</p></div></aside>",
+      "css": ".ds-ratings{min-width:0;background:#1c1427;border:2px solid #8b6650;padding:22px;color:var(--ink,#fff3d7);font:12px/1.5 system-ui,sans-serif}.ds-ratings h2{font:16px/1.8 var(--arcade,monospace);color:var(--team-color,#c4a0f2);margin:0 0 5px}.ds-role{font-size:11px;letter-spacing:.04em;color:var(--muted,#cbbbcc);margin:0 0 20px}.ds-row{display:grid;grid-template-columns:70px 1fr 36px;align-items:center;gap:10px;margin:12px 0}.ds-row strong{text-align:right;font-variant-numeric:tabular-nums}.ds-bars{display:grid;grid-template-columns:repeat(10,1fr);gap:3px}.ds-bars i{display:block;height:14px;background:#49384e}.ds-bars .ds-filled{background:var(--gold,#ffc460)}.ds-signature{padding-top:14px;margin-top:20px;border-top:1px solid #765871}.ds-signature small{display:block;font-size:11px;color:var(--muted,#cbbbcc);margin-bottom:8px}.ds-signature strong{font:11px/1.8 var(--arcade,monospace);color:var(--mint,#c9ef93)}.ds-signature p{font-size:12px;line-height:1.6;margin:10px 0 0}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Indigo Arena arcade cabinet",
+    "overview": "PokéJam uses the user-approved NBA Jam-inspired world: oversized Pokémon, pixel lettering, a warm hardwood court, stadium darkness, and direct game controls. The opening is a sequence of game screens that advances toward basketball. It supersedes the original long page with the court and room controls beneath an introduction.\n\nThis system records the built HTML, stylesheet, menu, renderer, and shared roster catalog. The direction is pinned and code-led; no generated comp or design seed applies. Screen composition lives in `.impeccable/surfaces/public-index-html.md`. Current menu captures are in `.impeccable/review/`; executed checks and remaining limits belong in `docs/verification/arcade-selection/verification.md`.",
+    "keyCharacteristics": [
+      "Aubergine enclosure, cream text, gold actions, mint focus, and franchise-colored identity.",
+      "Square panels and original geometric franchise emblems around credited pixel sprites.",
+      "Display type for spectacle; system sans for compact names, descriptions, and state labels.",
+      "Animated portraits and basketball action, with an explicit reduced-motion path."
+    ],
+    "rules": [
+      {
+        "name": "The Side Identity Rule",
+        "body": "Franchise color follows the selected franchise, never a fixed left/right side. Gold marks selection and mint marks focus; neither replaces the franchise name or player status.",
+        "section": "colors"
+      },
+      {
+        "name": "The Readable Cabinet Rule",
+        "body": "Pixel lettering supplies identity at display scale. Compact functional content may use sans; preserving a decorative font never justifies clipped names or sub-11px HTML controls. Canvas lettering uses the fixed game coordinate system and is not an HTML text-size token.",
+        "section": "typography"
+      },
+      {
+        "name": "The Pixel Edge Rule",
+        "body": "Render Canvas and sprite imagery without smoothing. Preserve sprite frame bounds, pivots, per-species scales, and front-facing ball anchors; source row 2 faces right and row 6 faces left. Keep sprite provenance in `public/assets/CREDITS.md` when changing assets.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "**Do** keep one clear forward action per game screen and usable Back/Home navigation.",
+      "**Do** pair franchise color with names, side numbers, and explicit ownership state.",
+      "**Do** keep functional HTML text at least 11px and use compact sans labels where pixel names become cramped.",
+      "**Do** preserve pixel edges, sprite metadata, source credits, and basketball readability.",
+      "**Do** preserve visible keyboard focus, reduced motion, muted startup, and readable numeric ratings."
+    ],
+    "donts": [
+      "**Don't** shrink the team board below three columns or the roster below three columns at the established 390px layout; let the page scroll vertically.",
+      "**Don't** replace the angled court or authored basketball motion with a menu-only spectacle.",
+      "**Don't** add an eyebrow above the home wordmark; it competes with the title and was removed in review.",
+      "**Don't** present locked choices as editable or display invented ratings unrelated to the simulation.",
+      "**Don't** infer touch gameplay, competitive balance, audible verification, other-engine verification, or public hosting from these visuals."
+    ]
+  }
+}
