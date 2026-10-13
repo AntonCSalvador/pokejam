@@ -1,4 +1,4 @@
-import {DT,A,ROSTER,TUNING as T,neutral,hoop} from './data.js';
+import {DT,A,PLAYERS,defaultSelection,validateSelection,TUNING as T,neutral,hoop} from './data.js';
 const ms=DT*1000, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 function random(m){m.seed=(Math.imul(m.seed,1664525)+1013904223)>>>0;return m.seed/4294967296;}
@@ -11,10 +11,11 @@ function emit(m,kind,player=null,extra={}){
 }
 function pose(p,action,duration){p.action=action;p.actionMs=duration;p.actionStart=p.ageMs;}
 function segmentDistance(p,a,b){const dx=b.x-a.x,dy=b.y-a.y;const t=clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1),0,1);return Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy);}
-export function createMatch({seed=7}={}){
- return {tick:0,seed,phase:'countdown',phaseMs:T.countdownMs,overtime:false,remainingMs:T.matchMs,shotClockMs:T.shotClockMs,
+export function createMatch({seed=7,selection=defaultSelection()}={}){
+ if(!validateSelection(selection))throw new RangeError('Invalid team or player selection');
+ return {tick:0,seed,teamKeys:[...selection.teamKeys],phase:'countdown',phaseMs:T.countdownMs,overtime:false,remainingMs:T.matchMs,shotClockMs:T.shotClockMs,
   possessionTeam:null,score:[0,0],eventId:0,events:[],lastPass:null,
-  players:ROSTER.map((r,id)=>({...r,id,x:id<2?25+id*7:75-(id-2)*7,y:id%2?38:18,vx:0,vy:0,z:0,facing:id<2?1:-1,
+  players:selection.playerKeys.map((key,id)=>({...structuredClone(PLAYERS[key]),id,team:Math.floor(id/2),x:id<2?25+id*7:75-(id-2)*7,y:id%2?38:18,vx:0,vy:0,z:0,facing:id<2?1:-1,
    turbo:100,meter:0,chargeMs:0,cooldownMs:0,jumpMs:0,stunMs:0,action:'idle',actionMs:0,actionStart:0,ageMs:0,power:null,bot:{}})),
   ball:{mode:'loose',x:50,y:28,z:12,vx:0,vy:0,vz:0,lastTeam:null},restartTeam:0};
 }
@@ -69,12 +70,12 @@ function releaseShot(m,p,forcedMiss=false){
 function signature(m,p,input){
  if(p.meter<100){emit(m,'feedback',p.id,{text:'Meter not full'});return;}
  const owns=m.ball.mode==='held'&&m.ball.holder===p.id;
- if(p.id!==0&&!owns){emit(m,'feedback',p.id,{text:'Need ball'});return;}
+ if(p.ability!=='dash'&&!owns){emit(m,'feedback',p.id,{text:'Need ball'});return;}
  if(p.power)return;
  p.meter=0;pose(p,'signature',600);emit(m,'signature',p.id,{text:p.move});
- if(p.id===0){const n=Math.hypot(input.x,input.y);p.power={kind:'windup',ms:T.dashWindupMs,dx:n?input.x/n:p.facing,dy:n?input.y/n:0};}
- else if(p.id===1)pass(m,p,T.passSpeed*T.bulletMultiplier);
- else p.power={kind:p.id===2?'heat':'sky',ms:T.powerMs};
+ if(p.ability==='dash'){const n=Math.hypot(input.x,input.y);p.power={kind:'windup',ms:T.dashWindupMs,dx:n?input.x/n:p.facing,dy:n?input.y/n:0};}
+ else if(p.ability==='pass')pass(m,p,T.passSpeed*T.bulletMultiplier);
+ else p.power={kind:p.ability,ms:T.powerMs};
 }
 function updateBall(m){
  const b=m.ball;
@@ -132,7 +133,7 @@ export function stepMatch(m,inputs=new Map()){
     else if(p.chargeMs>=T.maxChargeMs)releaseShot(m,p,true);
     else if(!(input.held&A.SHOOT))p.chargeMs=0;
    }else if((input.pressed&A.PASS)&&!p.cooldownMs){
-    p.cooldownMs=T.stealRecoveryMs;pose(p,'stagger',220);
+    p.cooldownMs=p.stealRecoveryMs;pose(p,'stagger',220);
     if(m.ball.mode==='held'){const q=m.players[m.ball.holder];if(q.team!==p.team&&dist(p,q)<T.stealRange&&(q.x-p.x)*p.facing>=0){q.stunMs=350;q.chargeMs=0;q.power=null;pose(q,'stagger',350);possess(m,p);emit(m,'steal',p.id);}}
    }
   }

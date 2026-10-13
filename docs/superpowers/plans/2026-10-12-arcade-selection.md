@@ -89,13 +89,13 @@ Ratings use integer values 1–10. Convert once in the catalog: `speed=16+speedR
 | Nidoking | 4 / 4 / 10 / 6 | sky | Crown Crusher |
 | Slowking | 2 / 8 / 4 / 6 | pass | King's Assist |
 
-- [ ] Add failing catalog/match tests: `assert.equal(TEAMS.length,7)`, `assert.equal(Object.keys(PLAYERS).length,21)`, `assert.deepEqual(defaultSelection().playerKeys,['tauros','machamp','heatmor','charizard'])`; assert all four original speed/window/dunk triples equal the current values. Reject null/malformed arrays, duplicate teams, duplicate starters, unknown keys, and foreign-roster starters. Check all 42 ordered franchise pairs with valid defaults.
-- [ ] Run `node --test test/roster.test.js`; confirm failure on missing catalog interfaces or unsupported selection, not syntax errors.
-- [ ] Implement catalog and helpers in `data.js`, then selection-aware `createMatch` in `simulation.js`. Keep profile data immutable by use: materialize fresh players and fresh rating objects for each match.
-- [ ] Add failing behavior cases: Tauros in slot 3 still dashes without ball; Machamp in slot 2 still passes; Kingdra in slot 0 needs the ball for its shooting boost. Assert one meter charge per activation, original four signatures unchanged, and steal recovery differs according to catalog values. In `server.test.js`, reconcile a Nidoking snapshot and assert key, ratings, and ability survive without mutating the authoritative snapshot.
-- [ ] Replace slot-based signature branching with ability dispatch and use `p.stealRecoveryMs` for steals. Bots keep emitting normal inputs; change bot code only if a reproduced species assumption requires it.
-- [ ] Run `node --test test/roster.test.js test/simulation.test.js test/server.test.js`; all pass. Run seeded complete matches covering every species at least once, asserting finite positions, valid possession, and completion; extend the existing simulation harness rather than introducing a second engine.
-- [ ] Commit only this task's files: `feat: add selectable species profiles and team matchups`.
+- [x] Add failing catalog/match tests: `assert.equal(TEAMS.length,7)`, `assert.equal(Object.keys(PLAYERS).length,21)`, `assert.deepEqual(defaultSelection().playerKeys,['tauros','machamp','heatmor','charizard'])`; assert all four original speed/window/dunk triples equal the current values. Reject null/malformed arrays, duplicate teams, duplicate starters, unknown keys, and foreign-roster starters. Check all 42 ordered franchise pairs with valid defaults.
+- [x] Run `node --test test/roster.test.js`; confirm failure on missing catalog interfaces or unsupported selection, not syntax errors.
+- [x] Implement catalog and helpers in `data.js`, then selection-aware `createMatch` in `simulation.js`. Keep profile data immutable by use: materialize fresh players and fresh rating objects for each match.
+- [x] Add failing behavior cases: Tauros in slot 3 still dashes without ball; Machamp in slot 2 still passes; Kingdra in slot 0 needs the ball for its shooting boost. Assert one meter charge per activation, original four signatures unchanged, and steal recovery differs according to catalog values. In `server.test.js`, reconcile a Nidoking snapshot and assert key, ratings, and ability survive without mutating the authoritative snapshot.
+- [x] Replace slot-based signature branching with ability dispatch and use `p.stealRecoveryMs` for steals. Bots keep emitting normal inputs; change bot code only if a reproduced species assumption requires it.
+- [x] Run `node --test test/roster.test.js test/simulation.test.js test/server.test.js`; all pass. Run seeded complete matches covering every species at least once, asserting finite positions, valid possession, and completion; extend the existing simulation harness rather than introducing a second engine.
+- [x] Commit only this task's files: `feat: add selectable species profiles and team matchups`.
 
 ## Task 2: Authoritative team and starter choices
 
@@ -189,4 +189,4 @@ Stable UI anchors: retain `#create` (now Play), `#join-form`, `#room-link`, `#st
 - Review focus: each listed failure mode has an owning task and concrete assertions.
 - Limits: numeric profiles are initial tuning, not a balance claim. Source XML availability is not visual asset acceptance. Internet/audible/other-browser acceptance is not claimed.
 
-Plan status: Written and self-reviewed; awaiting user plan review. Implementation has not started.
+Plan status: Approved 2026-10-12; native implementation in progress.
