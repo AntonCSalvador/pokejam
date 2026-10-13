@@ -16,7 +16,7 @@ npm start
 
 Open **http://127.0.0.1:3000**. Press **Play**, choose two different franchises, pick two starters from each three-Pokémon roster, review the matchup, then **Tip off**. Empty slots use AI. Copy the invite to let friends choose any free slot; up to four humans can play. Two friends can share a team against AI. Late joins take control at the next stoppage.
 
-Each side's oldest connected human is its captain; the host configures all-AI sides. Captains choose teams and AI starters, and each human chooses their own Pokémon. A second human or reservation locks that side's franchise. Selecting your AI teammate's Pokémon swaps the two species. To control another free slot, select it and use **Play as P…**. Lineups lock at countdown and persist for rematches. Back preserves choices; the home logo leaves the room. Enter starts from Home, arrows browse focused grids, Escape goes back, and Tab reaches every enabled control.
+Each side's oldest connected human is its captain; the host configures all-AI sides. Captains choose teams and AI starters, and each human chooses their own Pokémon. A second human or reservation locks that side's franchise. Selecting your AI teammate's Pokémon swaps the two species. To control another free slot, select it and use **Play as P…**. Lineups lock at countdown and persist for rematches. Back preserves choices; an explicit Home action leaves the room. Escape moves back locally and retains the room, with **Resume** on the title screen. Enter starts or resumes from Home, arrows browse focused grids, and Tab reaches every enabled control.
 
 | Franchise | Roster (choose two) |
 | --- | --- |

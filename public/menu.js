@@ -34,7 +34,7 @@ export function createMenu({onCreate,onJoin,onSend,onHome,onInvite}){
   };seats.append(b);
  }
  document.querySelectorAll('[data-side]').forEach(b=>b.onclick=()=>{side=Number(b.dataset.side);renderTeams();});
- $('create').onclick=()=>{if($('create').disabled)return;$('create').disabled=true;setText($('create'),'OPENING COURT…');onCreate();};
+ $('create').onclick=()=>{if($('create').disabled)return;if(data.lobby){show(data.session?'teams':'players');return;}$('create').disabled=true;setText($('create'),'OPENING COURT…');onCreate();};
  $('join-open').onclick=()=>show('join');$('help-open').onclick=()=>show('help');
  document.querySelectorAll('[data-home]').forEach(b=>b.onclick=onHome);
  $('join-form').onsubmit=e=>{
@@ -43,10 +43,10 @@ export function createMenu({onCreate,onJoin,onSend,onHome,onInvite}){
   onJoin(room);
  };
  $('selection-next').onclick=()=>show(screen==='teams'?'players':'matchup');
- $('selection-back').onclick=back;
+ $('selection-back').onclick=()=>back();
  $('claim-player').onclick=()=>onSend({type:'claim',slot});
  $('start').onclick=()=>onSend({type:'start'});$('rematch').onclick=()=>onSend({type:'rematch'});$('invite').onclick=onInvite;
- function back(){if(screen==='matchup'&&!data.match)show('players');else if(screen==='players'&&data.session&&!data.lobby?.started)show('teams');else if(!['game','results'].includes(screen))onHome();}
+ function back(local=false){if(screen==='matchup'&&!data.match)show('players');else if(screen==='players'&&data.session&&!data.lobby?.started)show('teams');else if(!['game','results'].includes(screen)){if(local)show('home');else onHome();}}
  function show(next){
   if(screen===next)return;
   screen=next;document.body.dataset.screen=next;
@@ -129,7 +129,7 @@ export function createMenu({onCreate,onJoin,onSend,onHome,onInvite}){
  }
  function update(next){
   const previousSession=data.session,previousLobby=data.lobby;data=next;
-  if(next.ready!==undefined){$('create').disabled=!next.ready||!!next.busy;setText($('create'),!next.ready?'LOADING ROSTER…':next.busy?'OPENING COURT…':'PLAY');}
+  if(next.ready!==undefined){$('create').disabled=!next.ready||!!next.busy;setText($('create'),!next.ready?'LOADING ROSTER…':next.busy?'OPENING COURT…':next.lobby?'RESUME':'PLAY');}
   if(next.session?.slot!==previousSession?.slot&&next.session){slot=next.session.slot;side=Math.floor(slot/2);preview=null;}
   const phase=next.match?.phase??null;
   if(next.lobby){
@@ -146,7 +146,7 @@ export function createMenu({onCreate,onJoin,onSend,onHome,onInvite}){
  }
  window.addEventListener('keydown',e=>{
   if(e.target.matches('input,textarea,select')||e.target.isContentEditable||['game','results'].includes(screen)||data.match)return;
-  if(e.code==='Escape'){e.preventDefault();back();return;}
+  if(e.code==='Escape'){e.preventDefault();back(true);return;}
   if(screen==='home'&&e.code==='Enter'&&!e.target.closest('button,a')){e.preventDefault();$('create').click();return;}
   if(!e.code.startsWith('Arrow'))return;
   const group=e.target.closest('#team-grid,#player-grid,#starter-slots,.side-tabs');if(!group)return;

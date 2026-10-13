@@ -19,6 +19,11 @@ try{
  await page.locator('#team-grid').waitFor();
  await page.locator('#team-grid [data-team-key="sacramento"]').click();
  await page.waitForFunction(()=>window.testLobby?.teamKeys[0]==='sacramento');
+ const saved=await page.evaluate(()=>sessionStorage.getItem('pokejam-session')),roomURL=page.url();
+ await page.keyboard.press('Escape');await page.locator('#home-screen').waitFor();
+ assert.equal(await page.evaluate(()=>sessionStorage.getItem('pokejam-session')),saved,'Escape must retain the room token');assert.equal(page.url(),roomURL,'Escape retains the room URL');
+ assert.equal(await page.evaluate(()=>testSocket.readyState),1,'Escape keeps the connection');
+ await page.locator('#create').click();await page.locator('#team-grid').waitFor();assert.equal(await page.evaluate(()=>testLobby.teamKeys[0]),'sacramento');assert.equal(await page.evaluate(()=>testSent.filter(m=>m.type==='create').length),1,'Resume must not create another room');
  await page.locator('[data-side="1"]').click();await page.locator('#team-grid [data-team-key="toronto"]').click();
  await page.waitForFunction(()=>window.testLobby?.teamKeys[1]==='toronto');
  await page.locator('#team-grid [data-team-key="toronto"]').focus();await page.keyboard.press('ArrowLeft');assert.equal(await page.evaluate(()=>document.activeElement.dataset.teamKey),'golden-state');
