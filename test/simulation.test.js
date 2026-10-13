@@ -110,3 +110,14 @@ test('bot decisions change only decision memory, never authoritative facing or p
  const m=live();m.tick=2;Object.assign(m.players[2],{x:62,y:28,facing:1});const before=structuredClone(m);
  chooseBotInput(m,2);before.players[2].bot=structuredClone(m.players[2].bot);assert.deepEqual(m,before);
 });
+test('holding empty turbo never regenerates boost; releasing restores energy',()=>{
+ const p=createMatch().players[0];p.turbo=0;const start=p.x;
+ for(let i=0;i<60;i++)movePlayer(p,input({x:1,held:A.TURBO}),1/60);
+ assert.ok(Math.abs(p.x-start-p.speed)<1e-8);assert.equal(p.turbo,0);
+ movePlayer(p,input(),1/60);assert.ok(p.turbo>0);
+ const energy=p.turbo;movePlayer(p,input({held:A.TURBO}),1/60);assert.ok(p.turbo<energy,'holding turbo still spends energy while stationary');
+});
+test('Raging Bull follows normalized vertical input and uses facing only from rest',()=>{
+ for(const y of [-1,1]){const m=live(),p=m.players[0];p.meter=100;stepMatch(m,new Map([[0,input({y,pressed:A.SPECIAL})]]));assert.equal(p.power.dx,0);assert.equal(p.power.dy,y);}
+ const m=live(),p=m.players[0];p.meter=100;p.facing=-1;stepMatch(m,new Map([[0,input({pressed:A.SPECIAL})]]));assert.equal(p.power.dx,-1);assert.equal(p.power.dy,0);
+});

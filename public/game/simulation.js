@@ -20,8 +20,8 @@ export function createMatch({seed=7}={}){
 }
 export function movePlayer(p,input,dt,players=[]){
  const length=Math.hypot(input.x,input.y),scale=Math.max(1,length);
- const turbo=!!(input.held&A.TURBO)&&p.turbo>0&&length>0;
- p.turbo=clamp(p.turbo+(turbo?-T.turboDrain:T.turboFill)*dt,0,100);
+ const turboHeld=!!(input.held&A.TURBO),turbo=turboHeld&&p.turbo>0&&length>0;
+ p.turbo=clamp(p.turbo+(turboHeld?-T.turboDrain:T.turboFill)*dt,0,100);
  let speed=p.speed*(turbo?1.65:1);
  let dx=input.x/scale,dy=input.y/scale;
  if(p.power?.kind==='dash'){dx=p.power.dx;dy=p.power.dy;speed=p.speed*2;}
@@ -72,7 +72,7 @@ function signature(m,p,input){
  if(p.id!==0&&!owns){emit(m,'feedback',p.id,{text:'Need ball'});return;}
  if(p.power)return;
  p.meter=0;pose(p,'signature',600);emit(m,'signature',p.id,{text:p.move});
- if(p.id===0){const n=Math.hypot(input.x,input.y)||1;p.power={kind:'windup',ms:T.dashWindupMs,dx:input.x?input.x/n:p.facing,dy:input.y/n};}
+ if(p.id===0){const n=Math.hypot(input.x,input.y);p.power={kind:'windup',ms:T.dashWindupMs,dx:n?input.x/n:p.facing,dy:n?input.y/n:0};}
  else if(p.id===1)pass(m,p,T.passSpeed*T.bulletMultiplier);
  else p.power={kind:p.id===2?'heat':'sky',ms:T.powerMs};
 }

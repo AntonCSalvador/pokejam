@@ -68,6 +68,12 @@ const moveKeys=['KeyW','KeyA','KeyS','KeyD','ArrowLeft','ArrowRight','ArrowUp','
 window.addEventListener('keydown',e=>{if(document.activeElement!==canvas||!snapshot||(!buttons[e.code]&&!moveKeys.includes(e.code)))return;e.preventDefault();if(!keys.has(e.code))pressed|=buttons[e.code]||0;keys.add(e.code);});
 window.addEventListener('keyup',e=>{if(keys.has(e.code)){released|=buttons[e.code]||0;keys.delete(e.code);e.preventDefault();}});
 window.addEventListener('blur',clearControls);canvas.addEventListener('blur',clearControls);document.addEventListener('visibilitychange',()=>{if(document.hidden)clearControls();});canvas.onclick=()=>canvas.focus();
+document.querySelector('.brand').onclick=e=>{
+ e.preventDefault();++generation;clearTimeout(retryTimer);connected=false;connection?.close();connection=null;
+ session=null;saveSession();joiningRoom=null;snapshot=lobby=null;buffer=[];retry=0;lastFeedback=0;resetPrediction();
+ history.replaceState(null,'','/');document.body.classList.remove('playing');$('intro').hidden=false;$('lobby').hidden=true;$('player-bar').hidden=true;$('match-overlay').hidden=true;$('invite-fallback').hidden=true;
+ $('connection-state').textContent='ARCADE BASKETBALL';$('court-status').textContent='THE INDIGO ARENA';notice('');
+};
 $('create').onclick=()=>{session=null;saveSession();open({type:'create'});notice('Opening your court…');};
 $('join-form').onsubmit=e=>{e.preventDefault();let room=$('room-link').value.trim();try{if(room.includes('://'))room=new URL(room).searchParams.get('room');}catch{room=null;}if(!room||!/^[A-Za-z0-9_-]{16}$/.test(room)){notice('Paste a valid court link or 16-character code.');return;}session=null;saveSession();joiningRoom=room;open({type:'inspect',roomId:room});};
 $('start').onclick=()=>{connection.send({type:'start'});setSoundMuted(muted);};
