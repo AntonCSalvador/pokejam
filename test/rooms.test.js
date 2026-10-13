@@ -4,6 +4,48 @@ import {createRooms} from '../server/rooms.js';
 import {A} from '../public/game/data.js';
 function harness(){let time=1000;const r=createRooms({now:()=>time});return {r,client(){const messages=[];const id=r.connect(m=>messages.push(structuredClone(m)));return {id,messages,send:m=>r.receive(id,m),last:type=>messages.findLast(m=>m.type===type)};},advance(ticks){for(let i=0;i<ticks;i++){time+=1000/60;r.tick();}},wait(ms){time+=ms;r.tick();}};}
 const controls=(w,seq,extra={})=>({type:'input',seq,controlEpoch:w.controlEpoch,x:0,y:0,held:0,pressed:0,released:0,...extra});
+test('captains choose valid franchises and starters without overwriting people',()=>{
+ const h=harness(),a=h.client();a.send({type:'create'});const roomId=a.last('welcome').roomId;
+ assert.deepEqual(a.last('lobby').teamKeys,['chicago','miami']);assert.deepEqual(a.last('lobby').captains,[0,0]);
+ a.send({type:'selectTeam',side:0,teamKey:'sacramento'});a.send({type:'selectTeam',side:1,teamKey:'toronto'});
+ assert.deepEqual(a.last('lobby').playerKeys,['kingdra','nidoking','tyrantrum','sceptile']);
+ a.send({type:'selectPlayer',slot:0,playerKey:'nidoking'});assert.deepEqual(a.last('lobby').playerKeys.slice(0,2),['nidoking','kingdra']);
+ a.send({type:'selectPlayer',slot:1,playerKey:'slowking'});assert.deepEqual(a.last('lobby').playerKeys.slice(0,2),['nidoking','slowking']);
+ const b=h.client();b.send({type:'join',roomId,slot:2});assert.deepEqual(a.last('lobby').captains,[0,2]);
+ const before=a.last('lobby').playerKeys;
+ a.send({type:'selectPlayer',slot:2,playerKey:'aerodactyl'});assert.equal(a.last('error').code,'PLAYER_LOCKED');assert.deepEqual(a.last('lobby').playerKeys,before);
+ a.send({type:'selectTeam',side:1,teamKey:'miami'});assert.equal(a.last('error').code,'CAPTAIN_ONLY');
+ b.send({type:'selectTeam',side:1,teamKey:'sacramento'});assert.equal(b.last('error').code,'BAD_SELECTION');
+ b.send({type:'selectTeam',side:1,teamKey:'boston'});assert.deepEqual(b.last('lobby').playerKeys.slice(2),['celebi','gallade']);
+ b.send({type:'selectPlayer',slot:3,playerKey:'tauros'});assert.equal(b.last('error').code,'BAD_SELECTION');
+ b.send({type:'selectPlayer',slot:2,playerKey:'breloom'});assert.equal(b.last('lobby').playerKeys[2],'breloom');
+ b.send({type:'selectTeam',side:1,teamKey:'boston'});assert.equal(b.last('lobby').playerKeys[2],'breloom');
+});
+test('joining races, reserved slots and reconnect handoff protect selected species',()=>{
+ const h=harness(),a=h.client();a.send({type:'create'});const w=a.last('welcome');
+ const b=h.client();b.send({type:'join',roomId:w.roomId,slot:1});
+ a.send({type:'selectPlayer',slot:1,playerKey:'hitmontop'});assert.equal(a.last('error').code,'PLAYER_LOCKED');
+ a.send({type:'selectTeam',side:0,teamKey:'boston'});assert.equal(a.last('error').code,'TEAM_LOCKED');
+ b.send({type:'selectPlayer',slot:1,playerKey:'hitmontop'});assert.equal(b.last('lobby').playerKeys[1],'hitmontop');
+ h.r.disconnect(a.id);assert.equal(b.last('lobby').host,1);assert.deepEqual(b.last('lobby').captains,[1,1]);
+ b.send({type:'selectPlayer',slot:1,playerKey:'tauros'});assert.equal(b.last('error').code,'PLAYER_LOCKED');
+ b.send({type:'selectTeam',side:0,teamKey:'boston'});assert.equal(b.last('error').code,'TEAM_LOCKED');
+ const c=h.client();c.send({type:'reconnect',roomId:w.roomId,token:w.token});assert.deepEqual(c.last('lobby').captains,[0,1]);assert.equal(c.last('lobby').playerKeys[1],'hitmontop');
+ const d=h.client();d.send({type:'reconnect',roomId:w.roomId,token:c.last('welcome').token});
+ c.send({type:'selectPlayer',slot:0,playerKey:'machamp'});assert.equal(c.last('error').code,'SESSION_REPLACED');
+ d.send({type:'claim',slot:2});assert.deepEqual(d.last('lobby').captains,[1,2]);
+ d.send({type:'selectPlayer',slot:2,playerKey:'charizard'});assert.deepEqual(d.last('lobby').playerKeys.slice(2),['charizard','heatmor']);
+ b.send({type:'selectPlayer',slot:0,playerKey:'machamp'});assert.equal(b.last('lobby').playerKeys[0],'machamp');
+});
+test('match freezes validated selection and rematch preserves species but resets game state',()=>{
+ const h=harness(),a=h.client();a.send({type:'create'});
+ a.send({type:'selectTeam',side:0,teamKey:'sacramento'});a.send({type:'selectPlayer',slot:1,playerKey:'slowking'});a.send({type:'start'});h.advance(3);
+ assert.deepEqual(a.last('snapshot').match.players.map(p=>p.key),['kingdra','slowking','heatmor','charizard']);
+ a.send({type:'selectPlayer',slot:0,playerKey:'nidoking'});assert.equal(a.last('error').code,'MATCH_STARTED');
+ let finished=false;for(let i=0;i<12000&&!finished;i++){h.advance(3);finished=a.last('snapshot')?.match.phase==='finished';a.messages.length=0;}
+ assert.equal(finished,true);a.send({type:'rematch'});assert.equal(a.last('lobby').started,false);assert.equal(a.last('lobby').playerKeys[1],'slowking');
+ a.send({type:'start'});h.advance(3);assert.deepEqual(a.last('snapshot').match.score,[0,0]);assert.equal(a.last('snapshot').match.players[1].meter,0);
+});
 test('four slots are unique; fifth human and duplicate claims cannot overwrite them',()=>{
  const h=harness(),a=h.client();a.send({type:'create'});const roomId=a.last('welcome').roomId;
  const clients=[a];for(let slot=1;slot<4;slot++){const c=h.client();c.send({type:'join',roomId,slot});assert.equal(c.last('welcome').slot,slot);clients.push(c);}

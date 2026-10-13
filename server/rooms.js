@@ -1,14 +1,16 @@
 import {randomBytes} from 'node:crypto';
 import {createMatch,stepMatch} from '../public/game/simulation.js';
 import {chooseBotInput} from '../public/game/bots.js';
-import {A,neutral} from '../public/game/data.js';
+import {A,neutral,getTeam,defaultSelection,validateSelection} from '../public/game/data.js';
 const id=()=>randomBytes(12).toString('base64url'),token=()=>randomBytes(32).toString('base64url');
-const fields={create:[],inspect:['roomId'],join:['roomId','slot'],claim:['slot'],start:[],input:['seq','controlEpoch','x','y','held','pressed','released'],reconnect:['roomId','token'],rematch:[]};
+const fields={create:[],inspect:['roomId'],join:['roomId','slot'],claim:['slot'],selectTeam:['side','teamKey'],selectPlayer:['slot','playerKey'],start:[],input:['seq','controlEpoch','x','y','held','pressed','released'],reconnect:['roomId','token'],rematch:[]};
 function valid(m){
  if(!m||typeof m!=='object'||Array.isArray(m)||!Object.hasOwn(fields,m.type))return false;
  const keys=fields[m.type];if(Object.keys(m).length!==keys.length+1||keys.some(k=>!Object.hasOwn(m,k)))return false;
  if('roomId'in m&&(typeof m.roomId!=='string'||!/^[A-Za-z0-9_-]{16}$/.test(m.roomId)))return false;
  if('slot'in m&&(!Number.isInteger(m.slot)||m.slot<0||m.slot>3))return false;
+ if('side'in m&&m.side!==0&&m.side!==1)return false;
+ for(const key of ['teamKey','playerKey'])if(key in m&&(typeof m[key]!=='string'||m[key].length>32))return false;
  if('token'in m&&(typeof m.token!=='string'||m.token.length!==43))return false;
  if(m.type==='input')return ['seq','controlEpoch','held','pressed','released'].every(k=>Number.isSafeInteger(m[k])&&m[k]>=0)&&m.seq>0&&['held','pressed','released'].every(k=>m[k]<=31)&&['x','y'].every(k=>Number.isFinite(m[k])&&Math.abs(m[k])<=1);
  return true;
@@ -17,7 +19,8 @@ const copy=m=>structuredClone(m);
 export function createRooms({now=Date.now}={}){
  const rooms=new Map(),connections=new Map();let order=0;
  const error=(c,code,message=code.replaceAll('_',' ').toLowerCase())=>c.send({type:'error',code,message});
- function lobby(room){return {type:'lobby',roomId:room.id,host:room.host?.slot??null,started:!!room.match,slots:room.slots.map((s,slot)=>({slot,state:!s?'ai':!s.connection?'reserved':s.pending?'pending':'human'}))};}
+ const captain=(room,side)=>room.slots.filter(s=>s?.connection&&Math.floor(s.slot/2)===side).sort((a,b)=>a.order-b.order)[0]??room.host;
+ function lobby(room){return {type:'lobby',roomId:room.id,host:room.host?.slot??null,started:!!room.match,teamKeys:[...room.selection.teamKeys],playerKeys:[...room.selection.playerKeys],captains:[0,1].map(side=>captain(room,side)?.slot??null),slots:room.slots.map((s,slot)=>({slot,state:!s?'ai':!s.connection?'reserved':s.pending?'pending':'human'}))};}
  function broadcast(room){for(const s of room.slots)if(s?.connection)connections.get(s.connection)?.send(lobby(room));}
  function welcome(c,s){c.send({type:'welcome',roomId:s.room.id,token:s.token,slot:s.slot,controlEpoch:s.epoch});c.send(lobby(s.room));}
  function attach(c,room,slot){
@@ -34,7 +37,7 @@ export function createRooms({now=Date.now}={}){
   if(m.type==='inspect'){const room=rooms.get(m.roomId);if(!room)error(c,'ROOM_GONE','Room ended. Create a new room.');else c.send(lobby(room));return;}
   if(m.type==='create'){
    if(c.session){error(c,'ALREADY_JOINED');return;}if(rooms.size>=16){error(c,'SERVER_BUSY','All courts are busy. Try again shortly.');return;}
-   const room={id:id(),slots:[null,null,null,null],host:null,match:null,emptyAt:null};rooms.set(room.id,room);attach(c,room,0);return;
+   const room={id:id(),slots:[null,null,null,null],host:null,match:null,selection:defaultSelection(),emptyAt:null};rooms.set(room.id,room);attach(c,room,0);return;
   }
   if(m.type==='join'){
    if(c.session){error(c,'ALREADY_JOINED');return;}const room=rooms.get(m.roomId);if(!room){error(c,'ROOM_GONE','Room ended. Create a new room.');return;}
@@ -49,13 +52,39 @@ export function createRooms({now=Date.now}={}){
    s.connection=c.id;s.token=token();s.until=0;changeEpoch(s);c.session=s;room.emptyAt=null;if(!room.host?.connection)room.host=s;welcome(c,s);broadcast(room);return;
   }
   const s=c.session;if(!s||s.connection!==cid){error(c,'NOT_JOINED');return;}const room=s.room;
+  if(m.type==='selectTeam'||m.type==='selectPlayer'){
+   const reject=(code,message)=>{error(c,code,message);c.send(lobby(room));};
+   if(room.match){reject('MATCH_STARTED','Lineups are locked until the host returns to selection.');return;}
+   const next=copy(room.selection),side=m.type==='selectTeam'?m.side:Math.floor(m.slot/2);
+   if(m.type==='selectTeam'){
+    if(captain(room,side)!==s){reject('CAPTAIN_ONLY','Only this side’s captain can choose its team.');return;}
+    const team=getTeam(m.teamKey);
+    if(!team||next.teamKeys[1-side]===m.teamKey){reject('BAD_SELECTION','Choose a different available team.');return;}
+    if(next.teamKeys[side]===m.teamKey){c.send(lobby(room));return;}
+    if(room.slots.slice(side*2,side*2+2).some(p=>p&&p!==s)){reject('TEAM_LOCKED','A teammate or reserved player is on this side. Keep their team or choose another side.');return;}
+    next.teamKeys[side]=m.teamKey;next.playerKeys.splice(side*2,2,...team.roster.slice(0,2));
+   }else{
+    const occupant=room.slots[m.slot];
+    if((occupant&&occupant!==s)||(!occupant&&captain(room,side)!==s)){reject('PLAYER_LOCKED','Choose your player or an AI spot controlled by your captain.');return;}
+    if(!getTeam(next.teamKeys[side]).roster.includes(m.playerKey)){reject('BAD_SELECTION','Choose a Pokémon from this team.');return;}
+    if(next.playerKeys[m.slot]===m.playerKey){c.send(lobby(room));return;}
+    const mate=m.slot^1;
+    if(next.playerKeys[mate]===m.playerKey){
+     if(room.slots[mate]){reject('PLAYER_LOCKED','That Pokémon belongs to a human or reserved player.');return;}
+     next.playerKeys[mate]=next.playerKeys[m.slot];
+    }
+    next.playerKeys[m.slot]=m.playerKey;
+   }
+   if(!validateSelection(next)){reject('BAD_SELECTION','Choose two different Pokémon from each team.');return;}
+   room.selection=next;broadcast(room);return;
+  }
   if(m.type==='claim'){
    if(room.match){error(c,'MATCH_STARTED');return;}if(room.slots[m.slot]&&room.slots[m.slot]!==s){error(c,'SLOT_TAKEN');return;}
    room.slots[s.slot]=null;s.slot=m.slot;room.slots[s.slot]=s;changeEpoch(s);welcome(c,s);broadcast(room);return;
   }
   if(m.type==='start'||m.type==='rematch'){
    if(room.host!==s){error(c,'HOST_ONLY');return;}
-   if(m.type==='start'&&!room.match){room.match=createMatch({seed:randomBytes(4).readUInt32LE()});}
+   if(m.type==='start'&&!room.match){room.match=createMatch({seed:randomBytes(4).readUInt32LE(),selection:room.selection});}
    else if(m.type==='rematch'&&room.match?.phase==='finished'){room.match=null;for(const p of room.slots)if(p){p.pending=false;changeEpoch(p);if(p.connection)welcome(connections.get(p.connection),p);}}
    else {error(c,'WRONG_PHASE');return;}broadcast(room);return;
   }

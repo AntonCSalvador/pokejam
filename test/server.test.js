@@ -35,9 +35,14 @@ test('real HTTP and four sockets share authoritative match and reject invalid tr
  const file=await fetch(server.url+'/game/data.js');assert.equal(file.status,200);
  const traversal=await new Promise(resolve=>{request(server.url+'/%2e%2e%2fpackage.json',r=>{r.resume();resolve(r.statusCode);}).end();});assert.equal(traversal,403);
  const a=await client(server.url);clients.push(a);a.send({type:'create'});const w=await a.next('welcome');
+ a.send({type:'selectTeam',side:0,teamKey:'sacramento'});a.send({type:'selectTeam',side:1,teamKey:'toronto'});
  for(let slot=1;slot<4;slot++){const c=await client(server.url);clients.push(c);c.send({type:'join',roomId:w.roomId,slot});await c.next('welcome');}
  a.send({type:'start'});const snapshots=await Promise.all(clients.map(c=>c.next('snapshot')));
  assert.ok(snapshots.every(s=>s.match.players.length===4&&s.match.score.every(n=>n===0)));
+ assert.ok(snapshots.every(s=>JSON.stringify(s.match.teamKeys)===JSON.stringify(['sacramento','toronto'])));
+ assert.ok(snapshots.every(s=>JSON.stringify(s.match.players.map(p=>p.key))===JSON.stringify(['kingdra','nidoking','tyrantrum','sceptile'])));
+ a.send({type:'selectPlayer',slot:0,playerKey:'slowking'});assert.equal((await a.next('error')).code,'MATCH_STARTED');
+ a.send({type:'selectPlayer',slot:0,playerKey:'slowking',speed:999});assert.equal((await a.next('error')).code,'BAD_MESSAGE');
  a.ws.send('{');assert.equal((await a.next('error')).code,'BAD_MESSAGE');
  a.send({type:'input',seq:1,controlEpoch:w.controlEpoch,x:2,y:0,held:0,pressed:0,released:0});assert.equal((await a.next('error')).code,'BAD_MESSAGE');
  a.send({type:'input',seq:1,controlEpoch:w.controlEpoch,x:0,y:0,held:0,pressed:0,released:0,score:999});assert.equal((await a.next('error')).code,'BAD_MESSAGE');
