@@ -9,7 +9,11 @@ User approved native Canvas, JavaScript, and one Node WebSocket server. Native e
 ## Users and purpose
 The user and friends play online Pokémon basketball. Four character slots, two per team, can be controlled by humans or AI. Success is a complete readable match from separate computers, with working reconnects.
 ## Confirmed commitments
-NBA Jam-inspired angled pixel-art court, oversized Pokémon, exaggerated dunks, NBA-spoof team identities. Chicago Tauros and Miami Heatmors are the initial teams. Basketball builds signature-move meter. Desktop keyboard controls, private invite links, no accounts.
+NBA Jam-inspired arcade home → teams → players and ratings → matchup/countdown → angled pixel-art court → results/rematch. Oversized Pokémon, exaggerated dunks, original NBA-spoof emblems, private invites, no accounts. Seven franchises with three Pokémon each; two distinct starters per side: Chicago Tauros, Miami Heatmors, Boston Celebis, Golden State Wartortles, Toronto Tyrantrums, Minnesota Lycanrocs, Sacramento Kingdras. The full roster is in README.md and public/game/data.js.
+
+Speed, shooting, dunk, and steal ratings map to actual movement, shot timing, dunk reach, and steal recovery. All 21 species have credited sprites and named signatures using the existing dash/pass/shot/dunk effects. Basketball builds signature meter; the original four players retain their initial tuning. Profile balance remains a playtesting question.
+
+Selection is authoritative: each human edits their own Pokémon; the side captain edits AI starters and chooses the franchise only while no teammate/reservation occupies the side. The host controls all-AI sides. Different franchises, distinct starters, no client-supplied stats. Selection freezes at countdown and survives rematches; match state resets.
 ## Evidence and limits
 Approved design and plan live in docs/superpowers. Imported sprites and source records live in public/assets. Hosting destination and separate-network verification remain open. Do not advertise a live public service before deployment.
 ## Accessibility

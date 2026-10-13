@@ -1,5 +1,6 @@
 .worktrees/
 .superpowers/
+.impeccable/review/
 node_modules/
 .env
 .env.*
