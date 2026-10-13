@@ -12,11 +12,11 @@ async function tab(delay=0){
  return {context,page,state};
 }
 try{
- const a=await tab(75);await a.page.goto(server.url);await a.page.locator('#create').click();await until(()=>a.state.welcome);await a.page.locator('#start').click();await until(()=>a.state.latest?.match.phase==='live');
- const b=await tab(75);await b.page.goto(server.url+'/?room='+a.state.welcome.roomId);await b.page.locator('#slots button').nth(1).click();await until(()=>b.state.welcome);
+ const a=await tab(75);await a.page.goto(server.url);await a.page.locator('#create').click();await until(()=>a.state.welcome);await a.page.locator('#selection-next').click();await a.page.locator('#selection-next').click();await a.page.locator('#start').click();await until(()=>a.state.latest?.match.phase==='live');
+ const b=await tab(75);await b.page.goto(server.url+'/?room='+a.state.welcome.roomId);await b.page.locator('#starter-slots [data-slot="1"]').click();await until(()=>b.state.welcome);
  await until(()=>b.state.latest?.pending===true);await until(()=>b.state.latest?.pending===false,35000);assert.equal(b.state.latest.slot,1);
  await until(()=>a.state.latest.match.phase==='live');a.state.snapshots=[];await a.page.locator('#court').focus();await a.page.keyboard.down('KeyW');await wait(800);await a.page.keyboard.up('KeyW');await wait(300);assert.ok(a.state.snapshots.some(s=>s.match.players[0].vy<0));
- await a.page.screenshot({path:'docs/verification/delayed-coop.png',fullPage:true});console.log('PASS two-browser co-op at 150 ms RTT; late join transferred at stoppage; movement acknowledged');
+ await a.page.screenshot({path:'docs/verification/arcade-selection/delayed-coop.png',fullPage:true});console.log('PASS two-browser co-op at 150 ms RTT; late join transferred at stoppage; movement acknowledged');
  // A duplicate tab uses the exact token from this tab; old controller must recover visibly.
  const c=await tab();await c.page.addInitScript(s=>sessionStorage.setItem('pokejam-session',JSON.stringify(s)),b.state.welcome);await c.page.goto(server.url+'/?room='+a.state.welcome.roomId);await until(()=>c.state.welcome);await b.page.locator('#create').waitFor();assert.match(await b.page.locator('#notice').innerText(),/another tab/);
  console.log('PASS duplicate token replaces controller and restores old-tab home');
