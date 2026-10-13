@@ -2,7 +2,13 @@ import {DT,A,ROSTER,TUNING as T,neutral,hoop} from './data.js';
 const ms=DT*1000, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 function random(m){m.seed=(Math.imul(m.seed,1664525)+1013904223)>>>0;return m.seed/4294967296;}
-function emit(m,kind,player=null,extra={}){m.events.push({id:++m.eventId,tick:m.tick,kind,player,...extra});if(m.events.length>48)m.events.shift();}
+function emit(m,kind,player=null,extra={}){
+ m.events.push({id:++m.eventId,tick:m.tick,kind,player,...extra});if(m.events.length>48)m.events.shift();
+ const reward=(id,value)=>{if(id!==null&&id!==undefined)m.players[id].meter=clamp(m.players[id].meter+value,0,100);};
+ if(kind==='score'){reward(player,25);reward(extra.assist,10);}
+ if(kind==='steal'||kind==='block')reward(player,15);
+ if(kind==='rebound'&&extra.defensive)reward(player,10);
+}
 function pose(p,action,duration){p.action=action;p.actionMs=duration;p.actionStart=p.ageMs;}
 function segmentDistance(p,a,b){const dx=b.x-a.x,dy=b.y-a.y;const t=clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1),0,1);return Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy);}
 export function createMatch({seed=7}={}){
@@ -60,6 +66,16 @@ function releaseShot(m,p,forcedMiss=false){
  if(dunk){p.turbo-=T.dunkCost;p.jumpMs=800;}
  p.chargeMs=0;p.power=null;pose(p,dunk?'dunk':'shoot',dunk?800:500);emit(m,dunk?'dunk':'shot',p.id);
 }
+function signature(m,p,input){
+ if(p.meter<100){emit(m,'feedback',p.id,{text:'Meter not full'});return;}
+ const owns=m.ball.mode==='held'&&m.ball.holder===p.id;
+ if(p.id!==0&&!owns){emit(m,'feedback',p.id,{text:'Need ball'});return;}
+ if(p.power)return;
+ p.meter=0;pose(p,'signature',600);emit(m,'signature',p.id,{text:p.move});
+ if(p.id===0){const n=Math.hypot(input.x,input.y)||1;p.power={kind:'windup',ms:T.dashWindupMs,dx:input.x?input.x/n:p.facing,dy:input.y/n};}
+ else if(p.id===1)pass(m,p,T.passSpeed*T.bulletMultiplier);
+ else p.power={kind:p.id===2?'heat':'sky',ms:T.powerMs};
+}
 function updateBall(m){
  const b=m.ball;
  if(b.mode==='held'){const p=m.players[b.holder];b.x=p.x;b.y=p.y;b.z=2;return;}
@@ -102,7 +118,10 @@ export function stepMatch(m,inputs=new Map()){
  for(const p of m.players){
   p.ageMs+=ms;p.cooldownMs=Math.max(0,p.cooldownMs-ms);p.stunMs=Math.max(0,p.stunMs-ms);p.actionMs=Math.max(0,p.actionMs-ms);
   p.jumpMs=Math.max(0,p.jumpMs-ms);p.z=p.jumpMs>0?Math.sin(Math.PI*(1-p.jumpMs/(p.action==='dunk'?800:700)))*12:0;
-  const input=inputs.get(p.id)||neutral();movePlayer(p,input,DT,m.players);
+  const input=inputs.get(p.id)||neutral();
+  if(p.power){p.power.ms-=ms;if(p.power.ms<=0){if(p.power.kind==='windup')p.power={...p.power,kind:'dash',ms:T.dashMs};else p.power=null;}}
+  if(m.phase==='live'&&!p.stunMs&&(input.pressed&A.SPECIAL))signature(m,p,input);
+  movePlayer(p,input,DT,m.players);
   if(!p.actionMs) p.action=Math.hypot(p.vx,p.vy)>1?(m.ball.holder===p.id?'dribble':'run'):'idle';
   const owns=m.ball.mode==='held'&&m.ball.holder===p.id;
   if(m.phase==='live'&&p.stunMs===0){
