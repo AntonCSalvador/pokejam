@@ -9,4 +9,4 @@ The approved reference is a 1990s basketball arcade cabinet. The live game is th
 - Main authored motion is basketball: jumps, dribbling, shot arcs, dunk feedback. Reduced motion suppresses screen shake and flashing effects without hiding play.
 - Screens below desktop width retain readable controls and a letterboxed court; keyboard gameplay is explicitly required.
 
-Code-first build follows the approved implementation plan. No generated visual comp or altered visual identity was requested. Browser-tool connection was unavailable at build time; record actual visual evidence before claiming visual verification.
+Code-first build follows the approved implementation plan. No generated visual comp or altered visual identity was requested. The user approved headless Playwright after browser-control tools were unavailable; completed Edge checks and screenshots are recorded in `docs/verification/first-playable.md`. Verify changed visuals again when relevant.

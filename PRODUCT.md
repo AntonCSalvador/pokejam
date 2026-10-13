@@ -2,6 +2,8 @@
 <!-- impeccable:product-schema 1 -->
 ## Platform
 web
+## Current focus
+As of 2026-10-12, the user wants local development and new gameplay features. Public hosting is deferred. Keep the existing localhost server and multiplayer architecture; do not treat deployment as the next required task.
 ## Stack
 User approved native Canvas, JavaScript, and one Node WebSocket server. Native execution of the implementation plan is approved.
 ## Users and purpose

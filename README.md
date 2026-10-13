@@ -2,6 +2,8 @@
 
 A first playable Pokémon basketball fan game: Chicago Tauros versus Miami Heatmors. Four players, two baskets, three-minute matches, timed shots, huge dunks, steals, blocks, turbo, and signature moves earned through play. Original game code; no NBA Jam ROM or source code required.
 
+**Current focus: local development and gameplay features. Hosting is deferred.** For a fresh coding session, start with [AGENTS.md](AGENTS.md), which links the design, architecture, verification evidence, and known issues. The original implementation plan is completed history.
+
 ## Run
 
 Install Node.js 24 or newer, then run from this directory:
