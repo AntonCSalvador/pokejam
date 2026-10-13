@@ -2,7 +2,7 @@
 
 Date: 2026-10-12
 
-Status: Draft for user review. The user approved the arcade opening direction and liked the six proposed teams plus Sacramento. The detailed interaction defaults below are proposed; implementation has not started.
+Status: Written spec approved by the user on 2026-10-12. Implementation planning is authorized; implementation has not started.
 
 ## Intent
 
@@ -133,4 +133,4 @@ Use visible keyboard focus, native controls, accessible labels, text alongside c
 6. Headless Edge checks capture each new screen, keyboard navigation, a small viewport, missing-art recovery, and a full match/rematch. Inspect screenshots and all-species action atlases. Run the delayed four-client match because roster identity now crosses the protocol and snapshots.
 7. Record executed checks and remaining gaps; update README, PRODUCT, DESIGN, and handoff references to describe shipped behavior. The original completed plan remains historical.
 
-Asset readiness for the 17 additional Pokémon is not yet verified. Subjective balance, audible output, other browser engines, internet deployment, and separate-network play retain their existing verification limits. This work targets the local playable game.
+Asset readiness for the 17 additional Pokémon is not yet verified. Planning checks found animation metadata for all 17 at the existing pinned SpriteCollab revision; sheet quality, credits, frame extraction, and basketball readability still require inspection. Subjective balance, audible output, other browser engines, internet deployment, and separate-network play retain their existing verification limits. This work targets the local playable game.
