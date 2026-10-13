@@ -2,7 +2,7 @@
 
 Date: 2026-10-12
 
-Status: Written spec for user review. Conversation-level design approved; implementation has not started.
+Status: Written spec approved by the user on 2026-10-12. Implementation planning is authorized; implementation has not started.
 
 ## 1. Intent and agreed scope
 
