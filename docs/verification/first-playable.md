@@ -40,6 +40,7 @@ The court, player rings, scoreboard, controls, and four distinct Pokémon are vi
 - Container execution stays unverified because Docker is unavailable; cost: platform/runtime deployment issues may remain undiscovered.
 - Audible output and subjective responsiveness stay pending human playtest; cost: sound balance and shot timing may need tuning.
 - Browser coverage stays Edge-only for this pass; cost: other engines may have compatibility differences.
+- Automatic approval review rejected deletion of the plan's temporary workspace as “blocked by policy.” Scratch files remain ignored; cost: manual cleanup later. No deletion workaround was attempted.
 
 ## Independent review and final fix pass
 
