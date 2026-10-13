@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+ <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>PokéJam — Monster dunks. Two on two.</title>
+ <link rel="stylesheet" href="/style.css">
+ <script type="module" src="/app.js"></script>
+</head>
+<body>
+ <header class="marquee">
+  <a class="brand" href="/" aria-label="PokéJam home">POKÉ<span>JAM</span><i>2 ON 2</i></a>
+  <div class="header-right"><span id="connection-state">ARCADE BASKETBALL</span><button id="sound" class="quiet" aria-pressed="true">Sound off</button><button id="motion" class="quiet" aria-pressed="false">Less motion</button></div>
+ </header>
+ <main>
+  <section id="intro" class="intro">
+   <div><h1>SMALL TEAMS.<br><span>MONSTER DUNKS.</span></h1><p>Pick your Pokémon. Bring your crew.<br>Two on two. All attitude.</p></div>
+   <div class="entry-actions"><button id="create" class="primary">Create a court <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 16 16 4M4 4h12v12"/></svg></button><span class="action-note">Play solo or invite up to three friends.</span>
+    <form id="join-form"><label for="room-link">Got an invite?</label><div class="join-row"><input id="room-link" placeholder="Paste court link or code" autocomplete="off" required><button type="submit">Join</button></div></form>
+   </div>
+  </section>
+  <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+  <section class="arena" aria-label="Basketball court">
+   <div class="scoreboard"><div class="team chi"><span>CHICAGO</span><strong>TAUROS</strong></div><b id="chi-score">00</b><div class="clock"><strong id="clock">3:00</strong><span id="match-label">EXHIBITION PREVIEW</span></div><b id="mia-score">00</b><div class="team mia"><span>MIAMI</span><strong>HEATMORS</strong></div></div>
+   <div class="screen"><canvas id="court" width="640" height="360" tabindex="0" aria-label="PokéJam basketball game. Use WASD to move, J to pass or steal, K to shoot or block, Shift for turbo, L for signature, Space to switch." aria-describedby="controls"></canvas>
+    <div id="match-overlay" class="match-overlay" hidden><h2 id="overlay-title"></h2><p id="overlay-detail"></p><button id="rematch" class="primary" hidden>Back to lobby</button></div>
+    <div id="focus-hint" class="focus-hint" hidden>Click the court to play</div>
+   </div>
+   <div class="court-foot"><span id="court-status">THE INDIGO ARENA</span><span id="shot-clock">24 SECOND SHOT CLOCK</span><span>4 POKÉMON · 1 BALL</span></div>
+  </section>
+  <section id="lobby" class="lobby" hidden aria-label="Choose your Pokémon">
+   <div class="lobby-heading"><div><h2>CHOOSE YOUR PLAYER</h2><p id="lobby-hint">Empty spots play as AI. Friends can join either side.</p></div><div class="room-actions"><button id="invite">Copy invite</button><button id="start" class="primary">Start game</button></div></div>
+   <input id="invite-fallback" aria-label="Court invite link" readonly hidden>
+   <div id="slots" class="slots"></div>
+  </section>
+  <section id="player-bar" class="player-bar" hidden aria-label="Your player"><strong id="player-name"></strong><div><label for="turbo">TURBO</label><meter id="turbo" min="0" max="100" value="100"></meter></div><div><label id="signature-name" for="meter">SIGNATURE</label><meter id="meter" min="0" max="100" value="0"></meter></div><span id="power-hint">Build meter with big plays.</span></section>
+  <section id="controls" class="controls" aria-label="Keyboard controls"><h2>KNOW YOUR MOVES</h2><div><span><kbd>W A S D</kbd> Move</span><span><kbd>SHIFT</kbd> Turbo</span><span><kbd>J</kbd> Pass / steal</span><span><kbd>K</kbd> Hold & release shot / block</span><span><kbd>L</kbd> Signature</span><span><kbd>SPACE</kbd> Switch AI teammate</span></div><p>Time your release on the sweet spot. Close to the rim? Tap K with turbo energy to dunk.</p></section>
+ </main>
+ <footer><span>POKÉJAM <span class="muted">/ FIRST PLAYABLE</span></span><span>Desktop + keyboard · <a href="/assets/CREDITS.md" target="_blank" rel="noopener">Sprite credits</a> · Unofficial fan game</span></footer>
+</body>
+</html>
