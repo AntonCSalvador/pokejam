@@ -2,12 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import {PLAYERS} from '../public/game/data.js';
 
 test('every basketball pose has usable frames inside its credited source image', () => {
   const path = 'public/assets/sprites/manifest.json';
-  assert.ok(existsSync(path), 'four-character animation manifest is missing');
+  assert.ok(existsSync(path), 'roster animation manifest is missing');
   const manifest = JSON.parse(readFileSync(path));
-  assert.deepEqual(Object.keys(manifest).sort(), ['charizard', 'heatmor', 'machamp', 'tauros']);
+  assert.deepEqual(Object.keys(manifest).sort(), Object.keys(PLAYERS).sort());
   for (const entry of Object.values(manifest)) {
     for (const action of ['idle','run','dribble','pass','shoot','dunk','block','stagger','signature']) {
       for (const direction of ['left', 'right']) {
