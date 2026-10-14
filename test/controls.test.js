@@ -20,3 +20,7 @@ test('either Shift keeps turbo active',()=>{
  assert.ok(c.read().held&A.TURBO);c.keyDown('KeyK');assert.equal(c.read().turboActions,A.SHOOT);
  c.keyUp('ShiftRight');assert.equal(c.read().held&A.TURBO,0);
 });
+
+test('OS repeat after a reset stays neutral until release and fresh press',()=>{
+ const c=createControls();for(const key of ['KeyK','Space','ShiftLeft','ArrowRight']){c.keyDown(key);c.reset();assert.equal(c.keyDown(key,true),true);assert.deepEqual(c.read(),neutral());c.keyUp(key);c.keyDown(key);assert.notDeepEqual(c.read(),neutral());c.reset();}
+});

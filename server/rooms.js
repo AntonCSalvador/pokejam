@@ -1,7 +1,7 @@
 import {randomBytes} from 'node:crypto';
 import {createMatch,stepMatch} from '../public/game/simulation.js';
 import {chooseBotInput} from '../public/game/bots.js';
-import {A,neutral,getTeam,defaultSelection,validateSelection} from '../public/game/data.js';
+import {A,DT,neutral,getTeam,defaultSelection,validateSelection} from '../public/game/data.js';
 const id=()=>randomBytes(12).toString('base64url'),token=()=>randomBytes(32).toString('base64url');
 const fields={create:[],inspect:['roomId'],join:['roomId','slot'],claim:['slot'],selectTeam:['side','teamKey'],selectPlayer:['slot','playerKey'],start:[],input:['seq','controlEpoch','x','y','held','pressed','released','turboActions'],reconnect:['roomId','token'],rematch:[]};
 function valid(m){
@@ -92,6 +92,9 @@ export function createRooms({now=Date.now,matchFactory=createMatch}={}){
    if(m.controlEpoch!==s.epoch){error(c,'STALE_CONTROL');return;}
    if(m.seq<=s.seq)return;
    if(!room.match||s.pending)return;
+   // Identical held frames carry no new intent. Keep every action edge.
+   const tail=s.queue.at(-1),heldOnly=i=>!(i.pressed||i.released||i.turboActions);
+   if(tail&&heldOnly(tail)&&heldOnly(m)&&['x','y','held'].every(k=>tail[k]===m[k])){s.queue[s.queue.length-1]=m;s.seq=m.seq;s.lastAt=now();return;}
    if(s.queue.length>=15){error(c,'INPUT_BACKLOG','Connection is catching up.');return;}
    s.seq=m.seq;s.lastAt=now();s.queue.push(m);
   }
@@ -114,7 +117,7 @@ export function createRooms({now=Date.now,matchFactory=createMatch}={}){
    for(let slot=0;slot<4;slot++){
     const s=room.slots[slot];if(!s?.connection||s.pending||handled.has(s))continue;handled.add(s);
     let input;
-    if(now()-s.lastAt>=250){s.queue=[];s.last=neutral();input=neutral();}
+    if(now()-s.lastAt>=250){s.queue=[];s.ack=s.seq;s.last=neutral();input=neutral();}
     else if(s.queue.length){input=s.queue.shift();s.ack=input.seq;s.last={...input,pressed:0,released:0,turboActions:0};}
     else input={...s.last,pressed:0,released:0,turboActions:0};
     if((input.pressed&A.SWITCH)&&!room.slots[slot^1]){
@@ -128,8 +131,9 @@ export function createRooms({now=Date.now,matchFactory=createMatch}={}){
    }
    for(const [slot,input] of inputs){
     const p=m.players[slot],mate=m.players[slot^1];
-    if(m.phase==='live'&&(input.pressed&A.PASS)&&!(input.turboActions&A.PASS)&&!p.stunMs&&!p.recoveryMs&&!p.flight&&!p.knockback&&ai.has(mate.id)&&m.ball.mode==='held'&&m.ball.holder===mate.id){
-     mate.bot.passRequest={from:p.id,untilTick:m.tick+18};inputs.set(slot,{...input,pressed:input.pressed&~A.PASS});
+    const startsDash=(input.pressed&A.SPECIAL)&&p.ability==='dash'&&p.meter>=100&&(!p.power||(p.power.kind!=='windup'&&p.power.ms<=DT*1000));
+    if(!startsDash&&m.phase==='live'&&(input.pressed&A.PASS)&&!(input.turboActions&A.PASS)&&!p.stunMs&&!p.recoveryMs&&!p.flight&&!p.knockback&&ai.has(mate.id)&&m.ball.mode==='held'&&m.ball.holder===mate.id){
+     mate.bot.passRequest={from:p.id,untilTick:m.tick+18};inputs.set(slot,{...input,pressed:input.pressed&~(A.PASS|A.SHOOT),turboActions:input.turboActions&~(A.PASS|A.SHOOT)});
     }
    }
    for(const slot of ai)inputs.set(slot,chooseBotInput(m,slot));

@@ -100,6 +100,27 @@ test('room validates latched modifiers and preserves a quick turbo shoot chord',
 });
 
 function passRoom(){const m=live();giveBall(m,1);m.players[1].bot.input=neutral();const h=harness({matchFactory:()=>m}),a=h.client();a.send({type:'create'});a.send({type:'start'});return {m,h,a};}
+test('stale accepted switch is acknowledged without changing control ownership',()=>{
+ const {h,a}=passRoom(),w=a.last('welcome');a.send(controls(w,1,{pressed:A.SWITCH}));h.wait(251);h.advance(2);
+ assert.equal(a.last('snapshot').ackSeq,1);assert.equal(a.last('snapshot').slot,0);assert.equal(a.last('snapshot').controlEpoch,w.controlEpoch);
+ a.send(controls(w,2,{x:1}));h.advance(3);assert.equal(a.last('snapshot').ackSeq,2);assert.ok(a.last('snapshot').match.players[0].vx>0);
+});
+test('identical held frames collapse without dropping short action edges',()=>{
+ const {h,a}=passRoom(),w=a.last('welcome');let seq=0;
+ for(let i=0;i<20;i++)a.send(controls(w,++seq,{x:1}));
+ a.send(controls(w,++seq,{x:1,pressed:A.SHOOT,held:A.SHOOT}));a.send(controls(w,++seq,{x:1,released:A.SHOOT}));
+ for(let i=0;i<20;i++)a.send(controls(w,++seq,{x:1}));
+ assert.equal(a.last('error'),undefined);h.advance(6);assert.equal(a.last('snapshot').ackSeq,seq);assert.equal(a.last('snapshot').match.players[0].action,'block');
+});
+test('AI call obeys signature then J then K action priority',()=>{
+ for(const special of [false,true]){
+  const {m,h,a}=passRoom();m.players[0].meter=100;
+  a.send(controls(a.last('welcome'),1,{pressed:A.PASS|A.SHOOT|(special?A.SPECIAL:0),turboActions:A.SHOOT}));h.advance(2);
+  assert.equal(m.players[0].jumpMs,0,'J consumes lower priority K');
+  if(special){assert.equal(m.players[0].power.kind,'windup');assert.equal(m.events.some(e=>e.kind==='pass'),false,'successful dash consumes J');assert.equal(m.players[1].bot.passRequest,null);}
+  else{assert.equal(m.ball.kind,'pass');assert.equal(m.ball.tier,'normal');}
+ }
+});
 test('J requests a normal pass from AI holder exactly once',()=>{
  const {m,h,a}=passRoom();a.send(controls(a.last('welcome'),1,{pressed:A.PASS}));h.advance(2);
  assert.equal(m.ball.kind,'pass');assert.equal(m.ball.from,1);assert.equal(m.ball.tier,'normal');assert.equal(m.players[1].bot.passRequest,null);

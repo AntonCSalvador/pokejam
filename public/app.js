@@ -10,13 +10,19 @@ const $=id=>document.getElementById(id),canvas=$('court'),ctx=canvas.getContext(
 let assets={manifest:{},images:new Map(),failures:[]},session=null,connection=null,lobby=null,snapshot=null,seq=0,muted=true,ready=false,busy=false;
 let reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,demo=createMatch({seed:19}),frameTime=performance.now(),acc=0,viewTick=0;
 let joiningRoom=new URLSearchParams(location.search).get('room'),lastFeedback=0;
-let finalPlayback=null,pendingSwitchSeq=null;
+let finalPlayback=null,pendingSwitchSeq=null,switchSentAt=0;
 let generation=0,retry=0,retryTimer=null,connected=false,inputReady=false,pendingInputs=[],buffer=[],receivedAt=0,localPose=null;
 const notice=message=>{$('notice').textContent=message;$('notice').hidden=!message;};
 function saveSession(){try{sessionStorage.setItem('pokejam-session',JSON.stringify(session));}catch{}}
 function syncMenu(){menu.update({lobby,session,match:snapshot?.match,assets,reduced,ready,busy});}
 function clearControls(){controls.reset();if(session&&snapshot)sendInput();}
-function sendInput(){if(!connected||!inputReady||!session)return;const i={type:'input',...controls.read(),seq:++seq,controlEpoch:session.controlEpoch};if(connection?.send(i)){pendingInputs.push(i);if(pendingInputs.length>120)pendingInputs.shift();if(i.pressed&A.SWITCH){pendingSwitchSeq=i.seq;inputReady=false;}}controls.consumeEdges();}
+function sendInput(){
+ if(pendingSwitchSeq!==null&&performance.now()-switchSentAt>=1000&&session){resetPrediction();open({type:'reconnect',roomId:session.roomId,token:session.token});return;}
+ if(!connected||!inputReady||!session||snapshot?.pending||snapshot?.match.phase==='finished')return;
+ const i={type:'input',...controls.read(),seq:++seq,controlEpoch:session.controlEpoch};
+ if(connection?.send(i)){pendingInputs.push(i);if(pendingInputs.length>120)pendingInputs.shift();if(i.pressed&A.SWITCH){pendingSwitchSeq=i.seq;switchSentAt=performance.now();inputReady=false;}}
+ controls.consumeEdges();
+}
 function resetPrediction(){seq=0;pendingSwitchSeq=null;controls.reset();pendingInputs=[];localPose=null;}
 function open(action){
  const current=++generation;clearTimeout(retryTimer);connected=false;inputReady=false;connection?.close();
@@ -52,6 +58,7 @@ function onMessage(m){
  }
  if(m.type==='error'){
   busy=false;notice(m.message);if(m.code==='SLOT_TAKEN'&&joiningRoom)connection.send({type:'inspect',roomId:joiningRoom});
+  if(m.code==='INPUT_BACKLOG'&&pendingSwitchSeq!==null&&session){resetPrediction();open({type:'reconnect',roomId:session.roomId,token:session.token});return;}
   if(['ROOM_GONE','SESSION_EXPIRED','SESSION_REPLACED'].includes(m.code)){
    session=null;saveSession();snapshot=lobby=null;finalPlayback=null;buffer=[];resetPrediction();clearTimeout(retryTimer);$('player-bar').hidden=true;$('match-overlay').hidden=true;
    const room=joiningRoom;joiningRoom=null;++generation;connection?.close();connected=false;$('connection-state').textContent='CHOOSE A COURT';
@@ -72,7 +79,7 @@ const menu=createMenu({
  onSend(message){if(message.type==='start')setSoundMuted(muted);connection?.send(message);},onHome:home,
  async onInvite(){if(!lobby)return;const link=`${location.origin}/?room=${lobby.roomId}`;try{await navigator.clipboard.writeText(link);notice('Invite copied. Send it to your crew.');}catch{$('invite-fallback').hidden=false;$('invite-fallback').value=link;$('invite-fallback').select();}}
 });
-window.addEventListener('keydown',e=>{if(document.activeElement===canvas&&snapshot&&controls.keyDown(e.code))e.preventDefault();});
+window.addEventListener('keydown',e=>{if(document.activeElement===canvas&&snapshot&&controls.keyDown(e.code,e.repeat))e.preventDefault();});
 window.addEventListener('keyup',e=>{if(controls.keyUp(e.code))e.preventDefault();});
 window.addEventListener('blur',clearControls);canvas.addEventListener('blur',clearControls);document.addEventListener('visibilitychange',()=>{if(document.hidden)clearControls();});canvas.onclick=()=>canvas.focus();
 document.querySelector('.brand').onclick=e=>{e.preventDefault();home();};

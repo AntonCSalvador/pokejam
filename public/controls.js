@@ -6,8 +6,9 @@ export function createControls(){
  const turbo=()=>keys.has('ShiftLeft')||keys.has('ShiftRight');
  const consumeEdges=()=>{pressed=released=turboActions=0;};
  return {
-  keyDown(code){
+  keyDown(code,repeat=false){
    if(!buttons[code]&&!movement.has(code))return false;
+   if(repeat)return true;
    if(!keys.has(code)){const bit=buttons[code]||0;pressed|=bit;if(turbo()&&(bit&(A.PASS|A.SHOOT)))turboActions|=bit;keys.add(code);}
    return true;
   },

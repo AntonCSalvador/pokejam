@@ -118,7 +118,7 @@ function possess(m,p){
  if(previous!==p.team||b.rebound)m.shotClockMs=T.shotClockMs;
  if(previous!==p.team)m.lastPass=null;
  m.possessionTeam=p.team;
- clearCharge(p);
+ p.chargeMs=0;p.shotArmed=false;
  m.ball={mode:'held',holder:p.id,x:p.x,y:p.y,z:2,lastTeam:p.team};
  if(b.kind==='pass'&&b.team===p.team&&b.from!==p.id)m.lastPass={from:b.from,to:p.id,tick:m.tick};
  if(b.rebound)emit(m,'rebound',p.id,{defensive:b.lastTeam!==p.team});

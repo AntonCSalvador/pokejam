@@ -117,6 +117,17 @@ test('bots choose reachable costly shoves, turbo passes and catchable receiver l
  const before=structuredClone(n);for(const p of n.players){const input=chooseBotInput(n,p.id);assert.equal(input.turboActions&~input.pressed,0);assert.equal(input.turboActions&~6,0);before.players[p.id].bot=structuredClone(p.bot);}assert.deepEqual(n,before);
 });
 
+test('loose-ball pickup preserves paid dash during windup and movement',()=>{
+ for(const duringDash of [false,true]){
+  const m=live(),p=m.players[0];p.meter=100;m.ball={mode:'loose',x:50,y:28,z:2,vx:0,vy:0,vz:0,lastTeam:null};
+  if(!duringDash)Object.assign(m.ball,{x:p.x,y:p.y});
+  stepMatch(m,act(0,{x:1,pressed:A.SPECIAL}));
+  if(duringDash){while(p.power.kind==='windup')stepMatch(m);Object.assign(m.ball,{x:p.x,y:p.y,z:0});stepMatch(m);}
+  assert.equal(m.ball.holder,p.id);assert.equal(p.meter,0);assert.equal(p.power?.kind,duringDash?'dash':'windup');
+  const x=p.x;advance(m,20);assert.ok(p.x>x+5,'paid dash still moves after pickup');
+ }
+});
+
 function atDunkFinish(tier='standing'){
  const m=dunkCourt(tier==='standing'?90:86),p=m.players[0];if(tier!=='standing')p.runUpMs=150;if(tier==='turbo')p.turbo=100;
  stepMatch(m,act(0,{x:tier==='standing'?0:1,pressed:A.SHOOT,turboActions:tier==='turbo'?A.SHOOT:0}));

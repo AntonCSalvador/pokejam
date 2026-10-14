@@ -6,18 +6,18 @@ const server=await startServer();
 const browser=await chromium.launch({channel:'msedge',headless:true});
 const shots=new URL('../docs/verification/arcade-selection/',import.meta.url).pathname.replace(/^\/([A-Z]:)/,'$1');
 await mkdir(shots,{recursive:true});
-const errors=[],contexts=[];
+const errors=[],protocolErrors=[],contexts=[];
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,timeout=10000){const start=Date.now();while(!fn()){if(Date.now()-start>timeout)throw Error('Browser condition timed out');await wait(50);}}
 async function matchup(page){await page.locator('#selection-next').click();await page.locator('#selection-next').click();await page.locator('#start').waitFor();}
-async function tab(){const context=await browser.newContext({viewport:{width:1280,height:960}});contexts.push(context);const page=await context.newPage();const state={latest:null,sent:[],welcome:null,sockets:[]};await page.routeWebSocket('**/ws',ws=>{ws.connectToServer();state.sockets.push(ws);});page.on('pageerror',e=>errors.push(e.message));page.on('websocket',ws=>{ws.on('framereceived',e=>{const m=JSON.parse(e.payload);if(m.type==='snapshot')state.latest=m;if(m.type==='welcome')state.welcome=m;});ws.on('framesent',e=>state.sent.push(JSON.parse(e.payload)));});return {page,context,state};}
+async function tab(){const context=await browser.newContext({viewport:{width:1280,height:960}});contexts.push(context);const page=await context.newPage();const state={latest:null,sent:[],welcome:null,sockets:[]};await page.routeWebSocket('**/ws',ws=>{ws.connectToServer();state.sockets.push(ws);});page.on('pageerror',e=>errors.push(e.message));page.on('websocket',ws=>{ws.on('framereceived',e=>{const m=JSON.parse(e.payload);if(m.type==='snapshot')state.latest=m;if(m.type==='welcome')state.welcome=m;if(m.type==='error')protocolErrors.push(m.code);});ws.on('framesent',e=>state.sent.push(JSON.parse(e.payload)));});return {page,context,state};}
 try{
  const a=await tab();await a.page.goto(server.url);await a.page.evaluate(()=>document.fonts.ready);await wait(800);
- await a.page.screenshot({path:shots+'/home.png',fullPage:true});
+ await a.page.screenshot({path:shots+'/gameplay-journey-home.png',fullPage:true});
  await a.page.locator('#join-open').click();await a.page.locator('#room-link').fill('invalid');await a.page.locator('#join-form button').click();assert.match(await a.page.locator('#notice').innerText(),/valid court/);await a.page.locator('#join-screen [data-home]').click();
  await a.page.locator('#create').click();await a.page.locator('#team-grid').waitFor();
  await a.page.locator('[data-team-key="sacramento"]').click();await a.page.locator('[data-side="1"]').click();await a.page.locator('[data-team-key="toronto"]').click();
- await a.page.screenshot({path:shots+'/lobby.png',fullPage:true});
+ await a.page.screenshot({path:shots+'/gameplay-journey-lobby.png',fullPage:true});
  await a.page.locator('#sound').click();assert.equal(await a.page.locator('#sound').innerText(),'Sound on');await a.page.locator('#sound').click();
  await a.page.locator('#motion').click();assert.equal(await a.page.locator('#motion').getAttribute('aria-pressed'),'true');
  await matchup(a.page);await a.page.locator('#start').click();await until(()=>a.state.latest?.match.phase==='live');
@@ -26,7 +26,7 @@ try{
  assert.equal(a.state.latest.match.players[a.state.latest.slot].vx,0,'blur must stop movement');
  assert.ok(a.state.sent.some(m=>m.type==='input'&&m.x===1&&(m.held&1)));
  await a.page.locator('#court').focus();await a.page.keyboard.press('Space');await until(()=>a.state.latest.slot===1);assert.equal(a.state.latest.controlEpoch,2);
- await a.page.screenshot({path:shots+'/match.png',fullPage:true});
+ await a.page.screenshot({path:shots+'/gameplay-journey-match.png',fullPage:true});
  const oldToken=a.state.welcome.token;await a.state.sockets.at(-1).close({code:1012,reason:'Test interruption'});await until(()=>a.state.welcome.token!==oldToken,15000);assert.equal(a.state.latest.slot,1);
  console.log('PASS home, lobby, keys, blur, switch, sound, motion, reconnect');
 
@@ -37,15 +37,15 @@ try{
  assert.deepEqual([b,...others].map(c=>c.state.latest.slot),[0,1,2,3]);
  await b.page.locator('#court').focus();await b.page.keyboard.press('Space');await wait(200);assert.equal(b.state.latest.slot,0,'human teammate cannot be stolen');
  const full=await tab();await full.page.goto(server.url+'/?room='+room);await full.page.locator('#starter-slots button').first().waitFor();assert.equal(await full.page.locator('#starter-slots button:disabled').count(),4);
- await full.page.setViewportSize({width:390,height:844});await full.page.screenshot({path:shots+'/small.png',fullPage:true});assert.equal(await full.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
- const missing=await tab();await missing.page.route('**/sprites/tauros/*-Anim.png',route=>route.abort());await missing.page.goto(server.url);await missing.page.locator('#notice').waitFor();assert.match(await missing.page.locator('#notice').innerText(),/sprites could not load/);await missing.page.locator('#create').click();await matchup(missing.page);await missing.page.locator('#start').click();await until(()=>missing.state.latest?.match.phase==='live');await missing.page.screenshot({path:shots+'/fallback.png',fullPage:true});
+ await full.page.setViewportSize({width:390,height:844});await full.page.screenshot({path:shots+'/gameplay-journey-small.png',fullPage:true});assert.equal(await full.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ const missing=await tab();await missing.page.route('**/sprites/tauros/*-Anim.png',route=>route.abort());await missing.page.goto(server.url);await missing.page.locator('#notice').waitFor();assert.match(await missing.page.locator('#notice').innerText(),/sprites could not load/);await missing.page.locator('#create').click();await matchup(missing.page);await missing.page.locator('#start').click();await until(()=>missing.state.latest?.match.phase==='live');await missing.page.screenshot({path:shots+'/gameplay-journey-fallback.png',fullPage:true});
  await Promise.all([b,...others,full,missing].map(c=>c.context.close()));
  console.log('PASS four humans, protected teammate, full room, small viewport, missing sprite fallback');
  console.log('Waiting for real-time solo match to finish...');
  await until(()=>a.state.latest?.match.phase==='finished',300000);
- assert.notEqual(...a.state.latest.match.score);await a.page.locator('#rematch').waitFor();await a.page.screenshot({path:shots+'/results.png',fullPage:true});
+ assert.notEqual(...a.state.latest.match.score);await a.page.locator('#rematch').waitFor();await a.page.screenshot({path:shots+'/gameplay-journey-results.png',fullPage:true});
  console.log('PASS full solo match',JSON.stringify(a.state.latest.match.score));
  await a.page.locator('#rematch').click();await a.page.locator('#players-screen').waitFor();await a.page.locator('#selection-next').click();await a.page.locator('#start').click();await until(()=>a.state.latest?.match.phase==='countdown');
- const reset=a.state.latest.match;assert.deepEqual(reset.teamKeys,['sacramento','toronto']);assert.deepEqual(reset.players.map(p=>p.key),selected);assert.deepEqual(reset.score,[0,0]);assert.equal(reset.remainingMs,180000);assert.equal(reset.shotClockMs,24000);for(const p of reset.players){assert.equal(p.meter,0);assert.equal(p.action,'idle');}
- assert.deepEqual(errors,[]);console.log('PASS rematch preserves selection and resets game; zero uncaught browser errors');
+ const reset=a.state.latest.match;assert.deepEqual(reset.teamKeys,['sacramento','toronto']);assert.deepEqual(reset.players.map(p=>p.key),selected);assert.deepEqual(reset.score,[0,0]);assert.equal(reset.remainingMs,180000);assert.equal(reset.shotClockMs,24000);for(const p of reset.players){assert.equal(p.meter,0);assert.equal(p.action,'idle');for(const key of ['runUpMs','recoveryMs','shoveProtectionMs','stunMs','jumpMs','cooldownMs','chargeMs'])assert.equal(p[key],0);assert.equal(p.flight,null);assert.equal(p.knockback,null);assert.equal(p.shotArmed,false);}
+ assert.deepEqual(errors,[]);assert.deepEqual(protocolErrors,[]);console.log('PASS rematch preserves selection and resets game; zero browser exceptions and protocol errors');
 }finally{await browser.close();await server.close();}
