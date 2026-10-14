@@ -14,6 +14,12 @@ NBA Jam-inspired arcade home → teams → players and ratings → matchup/count
 Speed, shooting, dunk, and steal ratings map to actual movement, shot timing, dunk reach, and steal recovery. All 21 species have credited sprites and named signatures using the existing dash/pass/shot/dunk effects. Basketball builds signature meter; the original four players retain their initial tuning. Profile balance remains a playtesting question.
 
 Selection is authoritative: each human edits their own Pokémon; the side captain edits AI starters and chooses the franchise only while no teammate/reservation occupies the side. The host controls all-AI sides. Different franchises, distinct starters, no client-supplied stats. Selection freezes at countdown and survives rematches; match state resets.
+
+Gameplay upgrade (2026-10-14): J passes, steals, or calls for a pass from an AI teammate. Shift + J selects a fast pass (10 turbo) with the ball or a shove (25 turbo, hit or miss) without it. Shoves have 300 ms slow recovery and 900 ms cooldown; victims stagger for 400 ms with another 300 ms of shove protection. Contact spills a loose ball rather than granting possession. Passes steer toward a moving receiver with bounded turn rate and physical first-contact interception.
+
+Tap K near the rim for a committed dunk. Standing and running dunks cost zero; 150 ms of actual forward movement earns running reach. Shift + K spends 20 for more reach and height. Players carry the ball along the dunk trajectory; low takeoffs can be shoved, high dunks can be blocked. A successful dunk can posterize one close defender with a 150 ms fall, 300 ms down, and 250 ms get-up. Final scores are authoritative immediately; the results panel waits for that cosmetic recovery.
+
+The court remains 100 by 56. High airborne players clear ground bodies and forced displacement stops at bodies/bounds. General collision sliding and a taller court projection remain follow-up candidates; crowded ground contact can still feel sticky. No on-fire mode, alley-oops, airborne passing, or separate shove button was added.
 ## Evidence and limits
 Approved design and plan live in docs/superpowers. Imported sprites and source records live in public/assets. Hosting destination and separate-network verification remain open. Do not advertise a live public service before deployment.
 ## Accessibility

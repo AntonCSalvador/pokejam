@@ -2,7 +2,7 @@
 
 Date: 2026-10-13
 
-Status: Written spec, including posterization, approved by the user on 2026-10-13. Implementation planning is authorized. Starting values remain subject to playtesting; gameplay implementation has not started.
+Status: Written spec, including posterization, approved by the user on 2026-10-13. Implemented under the user-approved native execution plan on 2026-10-14. Starting values remain subject to playtesting; see the current verification record for evidence and limits.
 
 Baseline: `631aa86` on `main`. Local development, native Canvas, and the existing authoritative Node/WebSocket match server.
 
@@ -155,4 +155,4 @@ NBA Jam references establish the inspiration, not exact timing or balance for Po
 - [Midway NBA Jam arcade operations manual](https://manualzz.com/doc/9701813/midway-nba-jam-arcade-game-operations-manual): shoot/block, pass/steal, turbo-enhanced actions, and commands to the CPU teammate.
 - [NBA Jam Genesis manual transcription](https://manuals.plus/m/78734e385538f0b2075c82181c1b20ad3d1b59a77e03977d428be0f8377f0697): the control tables describe turbo + pass/steal as shove off ball and super-pass with ball. Its prose contains an inconsistent shove-button label; this design uses the table and the user's explicit correction. PokéJam deliberately adds standing dunks.
 
-Next step: review the implementation plan and choose its execution method under the active Superpowers workflow.
+Implementation: `docs/superpowers/plans/2026-10-13-gameplay-feel.md`. Evidence: `docs/verification/arcade-selection/verification.md` (gameplay upgrade section).

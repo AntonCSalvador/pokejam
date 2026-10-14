@@ -1,0 +1,107 @@
+{
+  "delayEachWayMs": 75,
+  "scenarios": [
+    {
+      "name": "normal-pass",
+      "commonTicks": 11,
+      "counts": {
+        "normal-pass": 1
+      }
+    },
+    {
+      "name": "turbo-pass",
+      "commonTicks": 10,
+      "counts": {
+        "turbo-pass": 1
+      }
+    },
+    {
+      "name": "shove",
+      "commonTicks": 8,
+      "counts": {
+        "shove": 1
+      }
+    },
+    {
+      "name": "standing-dunk",
+      "commonTicks": 19,
+      "counts": {
+        "standing-dunk": 1,
+        "score": 1,
+        "basket": 1
+      }
+    },
+    {
+      "name": "running-dunk",
+      "commonTicks": 28,
+      "counts": {
+        "running-dunk": 1,
+        "score": 1,
+        "basket": 1
+      }
+    },
+    {
+      "name": "turbo-dunk",
+      "commonTicks": 32,
+      "counts": {
+        "turbo-dunk": 1,
+        "score": 1,
+        "basket": 1
+      }
+    },
+    {
+      "name": "block",
+      "commonTicks": 9,
+      "counts": {
+        "standing-dunk": 1,
+        "block": 1,
+        "rebound": 1
+      }
+    },
+    {
+      "name": "posterized",
+      "commonTicks": 21,
+      "counts": {
+        "standing-dunk": 1,
+        "score": 1,
+        "posterized": 1,
+        "basket": 1
+      }
+    },
+    {
+      "name": "call",
+      "commonTicks": 10,
+      "counts": {
+        "normal-pass": 1,
+        "AI-call": 1
+      }
+    }
+  ],
+  "commonTicks": 4446,
+  "score": [
+    48,
+    35
+  ],
+  "counts": {
+    "normal-pass": 62,
+    "turbo-pass": 8,
+    "shove": 56,
+    "standing-dunk": 3,
+    "score": 35,
+    "basket": 35,
+    "running-dunk": 1,
+    "turbo-dunk": 2,
+    "block": 3,
+    "rebound": 7,
+    "posterized": 1,
+    "AI-call": 1,
+    "shot": 36,
+    "steal": 22,
+    "signature": 10,
+    "signature-pass": 4,
+    "feedback": 38,
+    "finish": 1
+  },
+  "protocolErrors": [],
+  "comparison": "Complete match state except bot decision memory; SHA-256 per common tick"
+}

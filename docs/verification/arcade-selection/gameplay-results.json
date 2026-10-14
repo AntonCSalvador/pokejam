@@ -1,5 +1,9 @@
 {
   "scenarios": [
+    "rematch",
+    "switch-dropped",
+    "switch-backlog",
+    "held-dunk",
     "final-poster",
     "normal-pass",
     "turbo-pass",
@@ -15,6 +19,7 @@
     "poster-reduced",
     "controls"
   ],
-  "browserErrors": [],
+  "unexpectedErrors": [],
+  "expectedBacklogRejections": 1,
   "atlases": 7
 }
