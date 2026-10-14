@@ -60,11 +60,15 @@ Click or Tab to the court to focus it. Leaving gameplay focus stops held control
 | --- | --- |
 | WASD / arrows | Move |
 | Shift | Turbo |
-| J | Pass; steal on defense |
+| J | Pass; steal on defense; call for a pass from your AI teammate |
+| Shift + J | Turbo pass (10 turbo); shove off ball (25 turbo, hit or miss) |
 | K | Hold and release near the shot-meter marker; block on defense |
-| K near the rim | Dunk when at least 20 turbo remains |
+| K near the rim | Tap to dunk at zero turbo; run toward the hoop first for more reach |
+| Shift + K near the rim | Turbo dunk: greater reach and height, costs 20 turbo |
 | L | Signature at full meter |
 | Space | Switch to your AI teammate; human/reserved slots are protected |
+
+With low turbo, fast passes and turbo dunks fall back to their ordinary versions. Shoves require 25: a miss still costs energy and leaves 300 ms of slow recovery. A shove spills the ball, and a low dunk can be shoved; block a high dunk. A successful dunk over a nearby defender knocks them down for 700 ms. Passes track moving teammates with limited steering and remain interceptable.
 
 Signatures reuse four basketball effects: dash, fast pass, shot boost, and boosted dunk. Each species has its own named move. Scores, assists, steals, blocks, and defensive rebounds earn meter. Tied games enter next-basket-wins overtime. Host can return to player selection for a rematch.
 

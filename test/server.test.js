@@ -8,7 +8,7 @@ import {createMatch} from '../public/game/simulation.js';
 
 test('prediction replays only unacknowledged current-epoch movement without changing outcomes',()=>{
  const match=createMatch();match.phase='live';const snapshot={match,slot:0,controlEpoch:2,ackSeq:4};
- const original=structuredClone(match);const frame={x:1,y:0,held:0,pressed:16,released:0};
+ const original=structuredClone(match);const frame={x:1,y:0,held:0,pressed:16,released:0,turboActions:0};
  assert.deepEqual(reconcileLocal(snapshot,[]),match.players[0]);
  assert.deepEqual(reconcileLocal(snapshot,[{...frame,seq:5,controlEpoch:1},{...frame,seq:4,controlEpoch:2}]),match.players[0]);
  const predicted=reconcileLocal(snapshot,[{...frame,seq:5,controlEpoch:2}]);assert.ok(predicted.x>match.players[0].x);assert.deepEqual(match,original);
@@ -23,6 +23,19 @@ test('snapshot sampling interpolates positions, holds unavailable state, and ded
  for(let tick=17;tick<70;tick++)appendSnapshot(buffer,{...b,match:{...b.match,tick}});assert.ok(buffer.length<=12);
 });
 test('reconnection backoff starts at half a second and caps at five',()=>{assert.equal(reconnectDelay(0),500);assert.equal(reconnectDelay(20),5000);});
+
+test('different flight IDs never blend consecutive same-origin passes',()=>{
+ const a={match:createMatch()};a.match.tick=10;a.match.ball={mode:'flight',kind:'pass',id:1,from:0,start:{x:20,y:20},x:40,y:20,z:2};
+ const b=structuredClone(a);b.match.tick=16;b.match.ball.id=2;b.match.ball.x=22;
+ assert.equal(sampleRemote([a,b],13).ball.x,40);
+});
+
+test('prediction cannot pull committed flight or knockback away from server path',()=>{
+ for(const field of ['flight','knockback']){
+  const match=createMatch();match.phase='live';match.players[0][field]={kind:'dunk'};const before=structuredClone(match);
+  const p=reconcileLocal({match,slot:0,ackSeq:0,controlEpoch:1},[{x:1,y:0,held:1,seq:1,controlEpoch:1}]);assert.deepEqual(p,match.players[0]);assert.deepEqual(match,before);
+ }
+});
 
 async function client(url){
  const ws=new WebSocket(url.replace('http:','ws:')+'/ws',{origin:url});
@@ -44,8 +57,8 @@ test('real HTTP and four sockets share authoritative match and reject invalid tr
  a.send({type:'selectPlayer',slot:0,playerKey:'slowking'});assert.equal((await a.next('error')).code,'MATCH_STARTED');
  a.send({type:'selectPlayer',slot:0,playerKey:'slowking',speed:999});assert.equal((await a.next('error')).code,'BAD_MESSAGE');
  a.ws.send('{');assert.equal((await a.next('error')).code,'BAD_MESSAGE');
- a.send({type:'input',seq:1,controlEpoch:w.controlEpoch,x:2,y:0,held:0,pressed:0,released:0});assert.equal((await a.next('error')).code,'BAD_MESSAGE');
- a.send({type:'input',seq:1,controlEpoch:w.controlEpoch,x:0,y:0,held:0,pressed:0,released:0,score:999});assert.equal((await a.next('error')).code,'BAD_MESSAGE');
+ a.send({type:'input',seq:1,controlEpoch:w.controlEpoch,x:2,y:0,held:0,pressed:0,released:0,turboActions:0});assert.equal((await a.next('error')).code,'BAD_MESSAGE');
+ a.send({type:'input',seq:1,controlEpoch:w.controlEpoch,x:0,y:0,held:0,pressed:0,released:0,turboActions:0,score:999});assert.equal((await a.next('error')).code,'BAD_MESSAGE');
  const wrong=new WebSocket(server.url.replace('http:','ws:')+'/ws',{origin:'https://wrong.example'});
  const status=await new Promise(resolve=>{wrong.on('unexpected-response',(_,r)=>{r.resume();resolve(r.statusCode);wrong.terminate();});wrong.on('error',()=>{});});assert.equal(status,403);
 });

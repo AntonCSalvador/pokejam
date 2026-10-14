@@ -1,4 +1,5 @@
-import {getTeam,TUNING as T} from './game/data.js';
+import {A,neutral,getTeam,TUNING as T} from './game/data.js';
+import {dunkOption,stepMatch} from './game/simulation.js';
 let muted=true,audioContext=null,lastEvent=0,lastMatch=null;
 export function setSoundMuted(value){muted=value;if(!muted){try{audioContext??=new AudioContext();audioContext.resume().catch(()=>{});}catch{muted=true;}}}
 function sound(kind){if(muted||!audioContext)return;try{const osc=audioContext.createOscillator(),gain=audioContext.createGain();osc.connect(gain);gain.connect(audioContext.destination);osc.type=kind==='score'?'square':'triangle';osc.frequency.setValueAtTime(kind==='score'?660:kind==='dunk'?110:230,audioContext.currentTime);osc.frequency.exponentialRampToValueAtTime(kind==='score'?990:55,audioContext.currentTime+.13);gain.gain.setValueAtTime(.025,audioContext.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+.18);osc.start();osc.stop(audioContext.currentTime+.2);}catch{}}
@@ -36,7 +37,7 @@ function stadium(ctx,tick,reduced,teams){
  text(ctx,'THE INDIGO ARENA',321,341,9,'#ad859e');
  for(const team of [0,1]){const x=team===0?6:94;const [hx,hy]=project(x,28,10);ctx.strokeStyle='#9e899f';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(hx+(team?23:-23),hy+39);ctx.lineTo(hx+(team?23:-23),hy-20);ctx.lineTo(hx+(team?6:-6),hy-20);ctx.stroke();ctx.fillStyle='#d5cadd';ctx.fillRect(hx-18,hy-22,36,21);ctx.fillStyle='#403847';ctx.fillRect(hx-15,hy-20,30,16);ctx.strokeStyle='#faefdb';ctx.lineWidth=1;ctx.strokeRect(hx-6,hy-14,12,9);}
 }
-function frameFor(p,assets){const frames=assets.manifest[p.key]?.animations[p.action]?.[p.facing<0?'left':'right']||assets.manifest[p.key]?.animations.idle.right;if(!frames?.length)return null;const total=frames.reduce((n,f)=>n+f.durationMs,0);let t=((p.ageMs-p.actionStart)||0)%total;return frames.find(f=>(t-=f.durationMs)<0)||frames[0];}
+function frameFor(p,assets){const frames=assets.manifest[p.key]?.animations[p.action==='posterized'?'stagger':p.action==='shove'?'signature':p.action]?.[p.facing<0?'left':'right']||assets.manifest[p.key]?.animations.idle.right;if(!frames?.length)return null;const total=frames.reduce((n,f)=>n+f.durationMs,0);let t=((p.ageMs-p.actionStart)||0)%total;return frames.find(f=>(t-=f.durationMs)<0)||frames[0];}
 function ball(ctx,x,y,r=4){ctx.fillStyle='#412230';ctx.beginPath();ctx.arc(x+1,y+1,r+.5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ff963f';ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#71321d';ctx.lineWidth=.75;ctx.beginPath();ctx.moveTo(x-r,y);ctx.lineTo(x+r,y);ctx.moveTo(x,y-r);ctx.lineTo(x,y+r);ctx.stroke();ctx.fillStyle='#ffe2a2';ctx.fillRect(x-2,y-2,1.5,1.5);}
 export function drawPortrait(ctx,key,assets,tick=0){
  ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);ctx.imageSmoothingEnabled=false;
@@ -45,7 +46,15 @@ export function drawPortrait(ctx,key,assets,tick=0){
  const scale=Math.min(assets.manifest[key].portraitScale??2.4,(ctx.canvas.width-16)/width,(ctx.canvas.height-16)/height);
  ctx.drawImage(img,sx+l,sy+t,width,height,(ctx.canvas.width-width*scale)/2,ctx.canvas.height-8-height*scale,width*scale,height*scale);
 }
-export function renderMatch(ctx,m,{assets,controlledSlot=-1,reducedMotion=false,localPose=null}){
+export function renderMatch(ctx,m,{assets,controlledSlot=-1,reducedMotion=false,localPose=null,controlInput=neutral(),finishElapsedMs=0}){
+ // The authority freezes at the whistle. Reuse its dead-ball recovery on a
+ // disposable copy, so final falls and landings finish without changing results.
+ if(m.phase==='finished'&&m.events.findLast(e=>e.kind==='score')?.posterized!==undefined){
+  m=structuredClone(m);m.phase='deadball';m.phaseMs=T.deadballMs;
+  for(let elapsed=0;elapsed<Math.min(700,finishElapsedMs);elapsed+=1000/60)stepMatch(m);
+  m.phase='finished';
+ }
+ let attachedBall=null;
  ctx.imageSmoothingEnabled=false;ctx.save();
  const recent=m.events.findLast(e=>e.kind==='score');if(!reducedMotion&&recent&&m.tick-recent.tick<12)ctx.translate(Math.sin(m.tick*3)*1.5,Math.cos(m.tick*4));
  const teams=m.teamKeys.map(getTeam);stadium(ctx,m.tick,reducedMotion,teams);
@@ -55,20 +64,39 @@ export function renderMatch(ctx,m,{assets,controlledSlot=-1,reducedMotion=false,
   ctx.fillStyle='#50343c88';ctx.beginPath();ctx.ellipse(x,y,15,5,0,0,Math.PI*2);ctx.fill();
   ctx.strokeStyle=selected?'#d6ff98':teams[p.team].color;ctx.lineWidth=selected?2:1;ctx.beginPath();ctx.ellipse(x,y,17,6,0,0,Math.PI*2);ctx.stroke();
   const f=frameFor(p,assets),img=f&&assets.images.get(f.image);const scale=assets.manifest[p.key]?.courtScale??1.85;
-  if(img){const [sx,sy,w,h]=f.rect;ctx.drawImage(img,sx,sy,w,h,px-f.pivot[0]*scale,py-f.pivot[1]*scale,w*scale,h*scale);}
+  if(img){const [sx,sy,w,h]=f.rect;ctx.save();ctx.translate(px,py);
+   if(p.action==='posterized'){
+    const elapsed=p.ageMs-p.actionStart,down=elapsed<T.posterFallMs?elapsed/T.posterFallMs:elapsed<T.posterFallMs+T.posterDownMs?1:Math.max(0,1-(elapsed-T.posterFallMs-T.posterDownMs)/T.posterRiseMs);
+    ctx.rotate(p.facing*1.4*down);
+   }
+   ctx.drawImage(img,sx,sy,w,h,-f.pivot[0]*scale,-f.pivot[1]*scale,w*scale,h*scale);ctx.restore();}
+
   else{ctx.fillStyle=teams[p.team].color;ctx.fillRect(px-9,py-28,18,28);text(ctx,p.name,px,py-34,6);}
   text(ctx,`${p.id+1}${selected?' YOU':''}`,x,y+14,5,selected?'#d6ff98':'#f9e6c7');
   if(p.power){ctx.strokeStyle=p.power.kind==='heat'?'#ffad34':'#c5ec8b';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,py-20,24,0,Math.PI*2);ctx.stroke();}
-  if(m.ball.mode==='held'&&m.ball.holder===p.id){let bx=px+p.facing*13,by=py-20;
+  if((m.ball.mode==='held'&&m.ball.holder===p.id)||(m.ball.kind==='dunk'&&m.ball.from===p.id)){let bx=px+p.facing*13,by=py-20;
    if(f){bx=px+(f.ballAnchor[0]-f.pivot[0])*scale;by=py+(f.ballAnchor[1]-f.pivot[1])*scale;}
-   if(p.action==='dribble'){by=py-5-Math.abs(Math.sin(m.tick*.33))*18;}ball(ctx,bx,by);
+   if(p.action==='dribble'){by=py-5-Math.abs(Math.sin(m.tick*.33))*18;}attachedBall=[bx,by];
+   if(selected&&m.ball.mode==='held'){
+    const option=dunkOption(p,{...controlInput,pressed:A.SHOOT,turboActions:controlInput.held&A.TURBO?A.SHOOT:0});
+    if(option)text(ctx,option.tier==='turbo'?'TURBO DUNK':'DUNK',px,py-67,6,'#d6ff98');
+   }
    if(p.chargeMs>0){ctx.fillStyle='#291c35';ctx.fillRect(px-19,py-65,38,5);ctx.fillStyle='#ffe6a4';ctx.fillRect(px-19+T.shotSweetMs/T.maxChargeMs*38-3,py-65,6,5);ctx.fillStyle='#bbef87';ctx.fillRect(px-19+Math.min(1,p.chargeMs/T.maxChargeMs)*36,py-67,2,9);}
   }
+  if(m.ball.kind==='pass'&&m.ball.target===p.id){
+   ctx.strokeStyle='#d6ff98';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,21,8,0,0,Math.PI*2);ctx.stroke();text(ctx,'PASS',px,py-70,6,'#d6ff98');
+  }
+  if(p.action==='shove'&&p.actionMs>0){const d=p.shoveDirection||{x:p.facing,y:0},[tx,ty]=project(p.x+d.x*4,p.y+d.y*4,3);ctx.strokeStyle='#fff0bd';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(px,py-10);ctx.lineTo(tx,ty);ctx.stroke();text(ctx,'SHOVE',px,py-65,6,'#ffe09a');}
+  if(p.recoveryMs>0)text(ctx,'RECOVER',x,y+23,5,'#ffe09a');
+
  }
- if(m.ball.mode!=='held'){const b=m.ball;const [sx,sy]=project(b.x,b.y);ctx.fillStyle='#563b4766';ctx.beginPath();ctx.ellipse(sx,sy,5,2,0,0,Math.PI*2);ctx.fill();ball(ctx,...project(b.x,b.y,b.z));}
+ if(!attachedBall&&m.ball.mode!=='held'){const b=m.ball;
+  if(b.kind==='pass'&&b.tier!=='normal'&&!reducedMotion)for(let i=3;i>0;i--){const [tx,ty]=project(b.x-Math.cos(b.heading)*i*.6,b.y-Math.sin(b.heading)*i*.6,b.z);ctx.fillStyle='#ffe2a2';ctx.fillRect(tx-2,ty-2,4,4);}
+ const [sx,sy]=project(b.x,b.y);ctx.fillStyle='#563b4766';ctx.beginPath();ctx.ellipse(sx,sy,5,2,0,0,Math.PI*2);ctx.fill();ball(ctx,...project(b.x,b.y,b.z));}
+ if(attachedBall)ball(ctx,...attachedBall);
  for(const team of [0,1]){const [x,y]=project(team===0?6:94,28,10);ctx.strokeStyle='#fff3dc';ctx.lineWidth=1;for(let i=-7;i<=7;i+=4){ctx.beginPath();ctx.moveTo(x+i,y+1);ctx.lineTo(x+i*.6,y+11);ctx.stroke();}ctx.strokeStyle='#ed684b';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,11,4,0,0,Math.PI*2);ctx.stroke();}
  const shout=m.events.findLast(e=>['score','signature','block','steal','overtime'].includes(e.kind));
- if(shout&&m.tick-shout.tick<70){const label=shout.kind==='score'?`${shout.points===3?'FROM DOWNTOWN!':'BOOM!'} +${shout.points}`:shout.kind==='signature'?shout.text:shout.kind==='block'?'GET THAT OUT!':shout.kind==='steal'?'SWIPED!':'OVERTIME!';text(ctx,label.toUpperCase(),320,18,10,'#ffe09a');}
+ if(shout&&m.tick-shout.tick<70){const label=shout.kind==='score'&&shout.posterized!==undefined?'POSTERIZED! +2':shout.kind==='score'?`${shout.points===3?'FROM DOWNTOWN!':'BOOM!'} +${shout.points}`:shout.kind==='signature'?shout.text:shout.kind==='block'?'GET THAT OUT!':shout.kind==='steal'?'SWIPED!':'OVERTIME!';text(ctx,label.toUpperCase(),320,18,10,'#ffe09a');}
  ctx.restore();
  if(lastMatch!==m.seed){lastMatch=m.seed;lastEvent=m.eventId;}
  for(const e of m.events)if(e.id>lastEvent){if(['score','dunk','steal','block'].includes(e.kind))sound(e.kind);lastEvent=e.id;}

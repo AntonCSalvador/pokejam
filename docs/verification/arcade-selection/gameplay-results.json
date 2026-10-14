@@ -1,0 +1,25 @@
+{
+  "scenarios": [
+    "rematch",
+    "switch-dropped",
+    "switch-backlog",
+    "held-dunk",
+    "final-poster",
+    "normal-pass",
+    "turbo-pass",
+    "intercept",
+    "call",
+    "shove-hit",
+    "shove-miss",
+    "standing-dunk",
+    "running-dunk",
+    "turbo-dunk",
+    "blocked-dunk",
+    "poster",
+    "poster-reduced",
+    "controls"
+  ],
+  "unexpectedErrors": [],
+  "expectedBacklogRejections": 1,
+  "atlases": 7
+}

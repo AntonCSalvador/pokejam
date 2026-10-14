@@ -1,9 +1,9 @@
 import {randomBytes} from 'node:crypto';
 import {createMatch,stepMatch} from '../public/game/simulation.js';
 import {chooseBotInput} from '../public/game/bots.js';
-import {A,neutral,getTeam,defaultSelection,validateSelection} from '../public/game/data.js';
+import {A,DT,neutral,getTeam,defaultSelection,validateSelection} from '../public/game/data.js';
 const id=()=>randomBytes(12).toString('base64url'),token=()=>randomBytes(32).toString('base64url');
-const fields={create:[],inspect:['roomId'],join:['roomId','slot'],claim:['slot'],selectTeam:['side','teamKey'],selectPlayer:['slot','playerKey'],start:[],input:['seq','controlEpoch','x','y','held','pressed','released'],reconnect:['roomId','token'],rematch:[]};
+const fields={create:[],inspect:['roomId'],join:['roomId','slot'],claim:['slot'],selectTeam:['side','teamKey'],selectPlayer:['slot','playerKey'],start:[],input:['seq','controlEpoch','x','y','held','pressed','released','turboActions'],reconnect:['roomId','token'],rematch:[]};
 function valid(m){
  if(!m||typeof m!=='object'||Array.isArray(m)||!Object.hasOwn(fields,m.type))return false;
  const keys=fields[m.type];if(Object.keys(m).length!==keys.length+1||keys.some(k=>!Object.hasOwn(m,k)))return false;
@@ -12,11 +12,11 @@ function valid(m){
  if('side'in m&&m.side!==0&&m.side!==1)return false;
  for(const key of ['teamKey','playerKey'])if(key in m&&(typeof m[key]!=='string'||m[key].length>32))return false;
  if('token'in m&&(typeof m.token!=='string'||m.token.length!==43))return false;
- if(m.type==='input')return ['seq','controlEpoch','held','pressed','released'].every(k=>Number.isSafeInteger(m[k])&&m[k]>=0)&&m.seq>0&&['held','pressed','released'].every(k=>m[k]<=31)&&['x','y'].every(k=>Number.isFinite(m[k])&&Math.abs(m[k])<=1);
+ if(m.type==='input')return ['seq','controlEpoch','held','pressed','released','turboActions'].every(k=>Number.isSafeInteger(m[k])&&m[k]>=0)&&m.seq>0&&(m.turboActions&~(A.PASS|A.SHOOT))===0&&(m.turboActions&~m.pressed)===0&&m.turboActions<=6&&['held','pressed','released'].every(k=>m[k]<=31)&&['x','y'].every(k=>Number.isFinite(m[k])&&Math.abs(m[k])<=1);
  return true;
 }
 const copy=m=>structuredClone(m);
-export function createRooms({now=Date.now}={}){
+export function createRooms({now=Date.now,matchFactory=createMatch}={}){
  const rooms=new Map(),connections=new Map();let order=0;
  const error=(c,code,message=code.replaceAll('_',' ').toLowerCase())=>c.send({type:'error',code,message});
  const captain=(room,side)=>room.slots.filter(s=>s?.connection&&Math.floor(s.slot/2)===side).sort((a,b)=>a.order-b.order)[0]??room.host;
@@ -27,7 +27,7 @@ export function createRooms({now=Date.now}={}){
   const s={room,slot,token:token(),connection:c.id,epoch:1,order:++order,queue:[],seq:0,ack:0,last:neutral(),lastAt:now(),until:0,pending:room.match?.phase==='live'||room.match?.phase==='buzzer'};
   c.session=s;room.slots[slot]=s;room.emptyAt=null;if(!room.host?.connection)room.host=s;welcome(c,s);broadcast(room);
  }
- function changeEpoch(s){s.epoch++;s.seq=0;s.ack=0;s.queue=[];s.last=neutral();s.lastAt=now();}
+ function changeEpoch(s){for(const p of s.room.match?.players||[])if(p.id===s.slot||p.bot.passRequest?.from===s.slot)p.bot.passRequest=null;s.epoch++;s.seq=0;s.ack=0;s.queue=[];s.last=neutral();s.lastAt=now();}
  function receive(cid,m){
   const c=connections.get(cid);if(!c)return;
   c.activeAt=now();if(c.replaced){error(c,'SESSION_REPLACED','This session moved to another tab.');return;}
@@ -84,7 +84,7 @@ export function createRooms({now=Date.now}={}){
   }
   if(m.type==='start'||m.type==='rematch'){
    if(room.host!==s){error(c,'HOST_ONLY');return;}
-   if(m.type==='start'&&!room.match){room.match=createMatch({seed:randomBytes(4).readUInt32LE(),selection:room.selection});}
+   if(m.type==='start'&&!room.match){room.match=matchFactory({seed:randomBytes(4).readUInt32LE(),selection:room.selection});}
    else if(m.type==='rematch'&&room.match?.phase==='finished'){room.match=null;for(const p of room.slots)if(p){p.pending=false;changeEpoch(p);if(p.connection)welcome(connections.get(p.connection),p);}}
    else {error(c,'WRONG_PHASE');return;}broadcast(room);return;
   }
@@ -92,6 +92,9 @@ export function createRooms({now=Date.now}={}){
    if(m.controlEpoch!==s.epoch){error(c,'STALE_CONTROL');return;}
    if(m.seq<=s.seq)return;
    if(!room.match||s.pending)return;
+   // Identical held frames carry no new intent. Keep every action edge.
+   const tail=s.queue.at(-1),heldOnly=i=>!(i.pressed||i.released||i.turboActions);
+   if(tail&&heldOnly(tail)&&heldOnly(m)&&['x','y','held'].every(k=>tail[k]===m[k])){s.queue[s.queue.length-1]=m;s.seq=m.seq;s.lastAt=now();return;}
    if(s.queue.length>=15){error(c,'INPUT_BACKLOG','Connection is catching up.');return;}
    s.seq=m.seq;s.lastAt=now();s.queue.push(m);
   }
@@ -108,20 +111,32 @@ export function createRooms({now=Date.now}={}){
    for(let i=0;i<4;i++){const s=room.slots[i];if(s&&!s.connection&&s.until<=now()){room.slots[i]=null;broadcast(room);}}
    if(room.emptyAt!==null&&now()-room.emptyAt>=120000){rooms.delete(room.id);continue;}
    const m=room.match;if(!m)continue;
-   const inputs=new Map();
+   const inputs=new Map(),handled=new Set();
+   for(const s of room.slots)if(s?.pending&&['deadball','countdown','finished'].includes(m.phase)){s.pending=false;changeEpoch(s);if(s.connection)welcome(connections.get(s.connection),s);broadcast(room);}
+   // Transfer controls before identifying which slots are currently covered by AI.
    for(let slot=0;slot<4;slot++){
-    const s=room.slots[slot];
-    if(s?.pending&&['deadball','countdown','finished'].includes(m.phase)){s.pending=false;changeEpoch(s);if(s.connection)welcome(connections.get(s.connection),s);broadcast(room);}
-    if(!s?.connection||s.pending){inputs.set(slot,chooseBotInput(m,slot));continue;}
+    const s=room.slots[slot];if(!s?.connection||s.pending||handled.has(s))continue;handled.add(s);
     let input;
-    if(now()-s.lastAt>=250){s.queue=[];s.last=neutral();input=neutral();}
-    else if(s.queue.length){input=s.queue.shift();s.ack=input.seq;s.last={...input,pressed:0,released:0};}
-    else input={...s.last,pressed:0,released:0};
+    if(now()-s.lastAt>=250){s.queue=[];s.ack=s.seq;s.last=neutral();input=neutral();}
+    else if(s.queue.length){input=s.queue.shift();s.ack=input.seq;s.last={...input,pressed:0,released:0,turboActions:0};}
+    else input={...s.last,pressed:0,released:0,turboActions:0};
     if((input.pressed&A.SWITCH)&&!room.slots[slot^1]){
-     room.slots[slot]=null;s.slot=slot^1;room.slots[s.slot]=s;changeEpoch(s);welcome(connections.get(s.connection),s);broadcast(room);
-     inputs.set(slot,chooseBotInput(m,slot));inputs.set(s.slot,neutral());
-    }else if(!inputs.has(slot))inputs.set(slot,input);
+     room.slots[slot]=null;s.slot=slot^1;room.slots[s.slot]=s;changeEpoch(s);welcome(connections.get(s.connection),s);broadcast(room);inputs.set(s.slot,neutral());
+    }else inputs.set(slot,input);
    }
+   const ai=new Set(m.players.filter(p=>!room.slots[p.id]?.connection||room.slots[p.id].pending).map(p=>p.id));
+   for(const p of m.players){
+    const request=p.bot.passRequest;
+    if(!request||!ai.has(p.id)||ai.has(request.from)||m.phase!=='live'||m.ball.mode!=='held'||m.ball.holder!==p.id||m.tick>=request.untilTick)p.bot.passRequest=null;
+   }
+   for(const [slot,input] of inputs){
+    const p=m.players[slot],mate=m.players[slot^1];
+    const startsDash=(input.pressed&A.SPECIAL)&&p.ability==='dash'&&p.meter>=100&&(!p.power||(p.power.kind!=='windup'&&p.power.ms<=DT*1000));
+    if(!startsDash&&m.phase==='live'&&(input.pressed&A.PASS)&&!(input.turboActions&A.PASS)&&!p.stunMs&&!p.recoveryMs&&!p.flight&&!p.knockback&&ai.has(mate.id)&&m.ball.mode==='held'&&m.ball.holder===mate.id){
+     mate.bot.passRequest={from:p.id,untilTick:m.tick+18};inputs.set(slot,{...input,pressed:input.pressed&~(A.PASS|A.SHOOT),turboActions:input.turboActions&~(A.PASS|A.SHOOT)});
+    }
+   }
+   for(const slot of ai)inputs.set(slot,chooseBotInput(m,slot));
    stepMatch(m,inputs);
    if(m.tick%3===0||m.phase==='finished')for(const s of room.slots)if(s?.connection){connections.get(s.connection)?.send({type:'snapshot',match:copy(m),slot:s.slot,controlEpoch:s.epoch,ackSeq:s.ack,pending:s.pending});}
   }

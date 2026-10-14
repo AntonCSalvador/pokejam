@@ -17,7 +17,9 @@
   - `docs/superpowers/specs/2026-10-12-pokejam-design.md`: detailed baseline rules and protocol behavior.
   - `docs/verification/first-playable.md`: actual evidence, review fixes, limitations, and known minor issues.
   - `docs/superpowers/specs/2026-10-12-arcade-selection-design.md`: approved selection and roster behavior.
-  - `docs/verification/arcade-selection/verification.md`: current roster/menu acceptance and remaining limits; first-playable evidence is historical.
+  - `docs/superpowers/specs/2026-10-13-gameplay-feel-design.md`: passing, AI calls, shoves, dunk tiers, and posterization rules.
+  - `docs/superpowers/plans/2026-10-13-gameplay-feel.md`: scoped gameplay implementation and verification record.
+  - `docs/verification/arcade-selection/verification.md`: current roster/menu/gameplay acceptance and remaining limits; first-playable evidence is historical.
   - `public/assets/CREDITS.md`: sprite provenance and terms.
 - `docs/superpowers/plans/2026-10-12-pokejam.md` is the **completed initial-build plan**, retained as history. Its original unchecked boxes and planning-stage handoff are not an active task list. New features get their own scoped work.
 - Keep behavior-changing decisions and material limitations in the relevant repo docs so future chats do not depend on this conversation.
@@ -26,9 +28,10 @@
 
 - Node.js 24+, JavaScript ES modules, native Canvas/WebSocket/Web Audio. `ws` is the only production dependency; Playwright is development-only.
 - `npm ci` if dependencies are missing; `npm start` serves `http://127.0.0.1:3000`. No frontend build step.
-- `npm test` runs fast asset, simulation, room, and real-server checks. Arcade-selection baseline on 2026-10-12: 36 passing; rerun appropriate checks for changes instead of treating that number as current proof.
+- `npm test` runs fast asset, simulation, room, and real-server checks. Gameplay-upgrade baseline on 2026-10-14: 70 passing; rerun appropriate checks for changes instead of treating that number as current proof.
 - `npm run test:browser` runs the full headless Edge journey and match/rematch; `npm run test:latency` runs four delayed clients through a full match. Both take several minutes. Browser tests can overwrite tracked verification screenshots; inspect those diffs.
 - Focused scripts: `node test/selection.mjs`, `node test/recovery.mjs`, `node test/exit.mjs`, `node test/animations.mjs`. New captures go under `docs/verification/arcade-selection/`. Headless Playwright testing was explicitly approved. Follow current tool permissions.
+- `node test/gameplay.mjs` checks 18 real-key gameplay scenarios and generates seven action atlases. Optional scenario names run only those cases, e.g. `node test/gameplay.mjs call controls`. Gameplay captures use `gameplay-*` names. Latency coverage includes nine guaranteed action scenarios before its full match and compares complete authoritative state except bot decision memory.
 
 ## Boundaries worth preserving
 
@@ -37,5 +40,7 @@
 - `public/connection.js`: movement prediction/reconciliation, interpolation, reconnect. `public/app.js`: controls/session lifecycle. `public/menu.js`: screen navigation, keyboard menus, franchise/starter selection. `public/render.js`: Canvas and audio.
 - Species key and ability belong to profiles; slot id and team side remain 0–3 and 0–1. Resolve identities through match.teamKeys, never slot-based signatures. Preserve server captain/reservation protections and selection locks; rematch retains only selection.
 - Preserve short input edges, control epochs, token rotation, neutral-on-blur behavior, once-only scoring, and blockable buzzer shots.
+- Input `turboActions` latches Shift at J/K keydown, contains only PASS/SHOOT bits also in `pressed`, and clears with edges. Never derive action combos from the later held mask. Ignore OS key repeats after control resets, stop inputs after finished snapshots, and bound switch acknowledgment waits with a fresh-epoch reconnect. Redundant held-only queued frames may collapse; action edges must remain ordered. Forced flight/knockback disables movement prediction. AI pass requests live only in bot memory and clear on possession/phase/control changes. Test setup may use the programmatic `matchFactory`; sockets have no debug state-setting command.
+- Ground movement still rejects blocked steps; general sliding and taller court framing remain follow-ups. Court size is unchanged. Standing/running dunks are free; turbo pass/dunk/shove cost 10/20/25. One made dunk can knock down one close defender; blocked dunks never posterize.
 - Sprite sheet row 2 faces right; row 6 faces left. Preserve frame metadata and front-facing ball anchors. Keep source credits when changing assets.
 - Known limits: internet deployment, Docker execution, other browser engines, audible output, and subjective gameplay feel/balance are unverified. Source Pokémon poses are reused for basketball; the original font license retains trailing whitespace. Full rooms now have explicit recovery copy and Home. See the current verification record before claiming other limits resolved.

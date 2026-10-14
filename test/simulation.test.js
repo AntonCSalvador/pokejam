@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createMatch, stepMatch, movePlayer } from '../public/game/simulation.js';
 import { A } from '../public/game/data.js';
 import { chooseBotInput } from '../public/game/bots.js';
-const input = (fields={}) => ({x:0,y:0,held:0,pressed:0,released:0,...fields});
+const input = (fields={}) => ({x:0,y:0,held:0,pressed:0,released:0,turboActions:0,...fields});
 function advance(m, ticks, inputs=new Map()) { for(let i=0;i<ticks;i++) stepMatch(m,inputs); }
 function live() {
   const m=createMatch({seed:7}); advance(m,180);
@@ -44,10 +44,10 @@ test('pass can be intercepted without resetting clock for a teammate',()=>{
   assert.equal(n.ball.holder,2);assert.equal(n.possessionTeam,1);
 });
 test('short tap creates one airborne dunk, with defensive block window',()=>{
-  const m=live();Object.assign(m.players[0],{x:87,y:28});
+  const m=live();Object.assign(m.players[0],{x:90,y:28});
   stepMatch(m,new Map([[0,input({pressed:A.SHOOT,released:A.SHOOT})]]));
   assert.equal(m.ball.kind,'dunk');assert.deepEqual(m.score,[0,0]);advance(m,65);assert.deepEqual(m.score,[2,0]);
-  const n=live();Object.assign(n.players[0],{x:87,y:28});Object.assign(n.players[2],{x:89,y:28});
+  const n=live();Object.assign(n.players[0],{x:90,y:28});Object.assign(n.players[2],{x:93,y:28});
   stepMatch(n,new Map([[0,input({pressed:A.SHOOT,released:A.SHOOT})],[2,input({pressed:A.SHOOT})]]));
   advance(n,65);assert.deepEqual(n.score,[0,0]);assert.ok(n.events.some(e=>e.kind==='block'));
 });
@@ -65,7 +65,7 @@ test('buzzer honors released shot once, then finishes or starts overtime',()=>{
   const n=live();n.remainingMs=1;stepMatch(n);assert.equal(n.overtime,true);assert.notEqual(n.phase,'finished');
 });
 test('buzzer shot remains blockable and cannot be followed by another shot',()=>{
-  const m=live();m.score=[2,0];m.remainingMs=20;Object.assign(m.players[0],{x:87,y:28});Object.assign(m.players[2],{x:89,y:28});
+  const m=live();m.score=[2,0];m.remainingMs=20;Object.assign(m.players[0],{x:90,y:28});Object.assign(m.players[2],{x:93,y:28});
   stepMatch(m,new Map([[0,input({pressed:A.SHOOT,released:A.SHOOT})],[2,input({pressed:A.SHOOT})]]));
   advance(m,120);assert.deepEqual(m.score,[2,0]);assert.equal(m.phase,'finished');
 });
