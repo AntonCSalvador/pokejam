@@ -10,7 +10,7 @@ Baseline: `631aa86` on `main`. Local development, native Canvas, and the existin
 
 Make possessions more readable, physical, and expressive with NBA Jam-style button combinations. The user wants powerful but costly shoves, clear passing, and enjoyable standing and running dunks. Running improves dunk reach; turbo improves it further. Tap K attempts an eligible dunk immediately.
 
-The approved package is normal and turbo passes, turbo + steal shoves, standing/running/turbo dunks, corresponding bot behavior, and readable presentation. During review, the user also approved calling for a pass from an AI teammate with J. Headless Playwright validation is explicitly approved.
+The approved package is normal and turbo passes, turbo + steal shoves, standing/running/turbo dunks, corresponding bot behavior, and readable presentation. During review, the user also approved calling for a pass from an AI teammate with J and explicitly requested that a defender who gets dunked on (posterized) fall down. Headless Playwright validation is explicitly approved.
 
 Success means a player can reliably pass to a moving teammate, recognize and counter a costly shove, and intentionally launch different dunks. These actions must work with all 21 profiles, humans or AI in any slot, and the existing room and reconnect flow. Timing and balance require hands-on playtesting.
 
@@ -94,17 +94,27 @@ Once above the low shove height, airborne motion can pass over ground bodies. It
 
 At the buzzer, an already-started dunk can finish and remains blockable. No new dunk can start. Settle active landings during dead ball, then clear flight, run-up, recovery, knockback, protection, and charged actions on the baseline restart or overtime toss. A finished match accepts no actions; a rematch recreates all action state from defaults. Existing phase/control input resets also clear the combo modifier.
 
+### Posterization
+
+A successful dunk over a defender knocks that defender down. Apply this to all dunk tiers when the defender is directly under or contesting the finish; an uncontested dunk does not knock over bystanders. Determine the result on the server only after the last block check and once-only scoring decision. A blocked or interrupted dunk never posterizes anyone.
+
+Initial contact rule: at the scoring instant, consider opponents within 3.5 court units of the dunker's ground position and within 6 units of the attacking hoop. An upright grounded defender or a defender in a block jump is eligible; an already stunned or downed opponent is not. Choose the closest eligible defender, with slot ID breaking an exact tie. Record the victim on the score event, and apply the fall once. One dunk can posterize one defender; a successful block takes priority even when the would-be victim meets these proximity rules.
+
+Use a visible fall, brief downed pose, then get-up sequence: initially 150 ms falling, 300 ms down, and 250 ms rising. Add up to 2 court units of bounded displacement away from the dunker, using the dunk's approach direction when positions coincide. Cancel the victim's jump or pending action and use the shared recovery/knockback rules. The fall must read as a knockdown rather than the existing upright Hurt/stagger pose. Reuse suitable credited frames where available; otherwise compose the fall from existing frames with rotation/offset and inspect every profile for a readable result.
+
+Show "POSTERIZED!" with the made basket. The 700 ms sequence plays during the existing 1.25-second dead ball and finishes before the next possession. All players reset normally on restart. A game-ending dunk still finishes the match immediately, while cosmetic fall playback completes before the results panel covers the court. This does not delay the authoritative result or permit more inputs. Reduced motion retains the fall and get-up information while suppressing decorative shake and flashes.
+
 ## Architecture, bots, and presentation
 
 Keep simulation rules, tuning, and bot decisions in `public/game/`. The server gathers validated human inputs, routes eligible AI pass requests, generates bot inputs, and steps the same authoritative simulation. It continues to own all resources, contact outcomes, possession, and scores. Do not introduce dependencies or client-selected outcomes.
 
-New match state is limited to the action state needed for committed dunk travel, shove recovery/knockback/protection, and run-up. Existing ball flight and event structures carry pass target/tier and dunk identity. Use a unique action/flight identity so interpolation does not blend two consecutive flights with coincidentally equal start coordinates.
+New match state is limited to the action state needed for committed dunk travel, recovery/knockback/protection, posterized knockdown playback, and run-up. Existing ball flight and event structures carry pass target/tier and dunk identity, and the score event records the posterized defender when present. Use a unique action/flight identity so interpolation does not blend two consecutive flights with coincidentally equal start coordinates.
 
 `public/app.js` latches combo modifiers and clears them with existing input resets. `server/rooms.js` validates the added mask and handles AI request routing. `public/connection.js` must respect committed actions and knockback during movement reconciliation; pending movement must not pull a dunker away from its authoritative path. Only movement is predicted. Shoves, catches, and scores wait for authoritative state, so latency may still be noticeable.
 
 Bots use the same button combinations, costs, run-up, catches, and recovery. They spend turbo selectively, attempt a shove only with reachable targets, and can be punished for misses. Off-ball teammates seek a passing lane and receive an incoming pass instead of blindly chasing its old location. Bot decision functions may update decision memory only.
 
-Keep existing pixel-art direction and credited sprite sources. Reuse compatible attack/stagger/jump frames with appropriate sequencing. Show the shove attempt even on a miss, victim displacement and recovery, the intended receiver, and distinct dunk travel/height. Sound can reinforce these events, but they must read while muted. Reduced motion removes shake, large flashes, and decorative trails while preserving ball path, jump height, target cues, and action readability.
+Keep existing pixel-art direction and credited sprite sources. Reuse compatible attack/stagger/jump frames with appropriate sequencing. Show the shove attempt even on a miss, victim displacement and recovery, the intended receiver, distinct dunk travel/height, and posterized falls. Sound can reinforce these events, but they must read while muted. Reduced motion removes shake, large flashes, and decorative trails while preserving ball path, jump height, target cues, and action readability.
 
 Update README controls and HTML/canvas descriptions together. Gameplay-facing text describes buttons and outcomes, without protocol details. During implementation, record final rule changes in PRODUCT.md and evidence/limitations in the current verification record.
 
@@ -115,6 +125,7 @@ Update README controls and HTML/canvas descriptions together. Gameplay-facing te
 - Fast moving catches needed segment collision and contact ordering, not array-first pickup.
 - Running dunks needed actual player travel and run-up eligibility, rather than a ball-only arc or one-frame movement tap.
 - Dunk contact needed a single cancellation path shared by blocks, low shoves, buzzer handling, and resets.
+- Posterization needs successful contested contact, one victim, block priority, a visible fall/get-up, and playback through the scoring stoppage or final whistle.
 - Quick combo taps needed modifier state captured on the action edge.
 - AI call-for-pass was missing and is now explicitly included by user request.
 - Snapshot interpolation and local movement prediction must respect new committed actions.
@@ -128,9 +139,10 @@ Add focused Node checks to the existing suite for the new rules. Tests must exer
 - AI call-for-pass with a vacant/disconnected teammate, expiry or possession loss, and prevention of commands to a human slot.
 - Shove hit, miss, direction/range, cost, cooldown, recovery, knockback bounds, no friendly hit, loose possession, no shove meter reward, simultaneous attempts, and protection against repeat stun.
 - Standing dunk with zero turbo; legitimate run-up versus blocked/one-frame motion; turbo and signature reach; same-frame tap; player/ball travel; low and high shove windows; block interruption; once-only scoring; buzzer and rematch cleanup.
+- Posterization for each dunk tier; no fall on blocked/interrupted/uncontested dunks or for teammates, bystanders, or already downed players; deterministic victim selection; one fall per basket; completed fall/get-up before restart and visible final-whistle playback.
 - Representative seeded games covering all species, legal bot inputs/state mutation, and complete match outcomes.
 
-Use headless Playwright through the real local server to press actual keys, observe snapshots, and inspect captured action frames. A deterministic development/test scenario may arrange court positions through the existing test harness or shared simulation; production sockets must not accept a debug state-setting command. Validate normal and turbo passes, AI call-for-pass, shove hit/miss/recovery, three dunk tiers, blocked dunks, muted/reduced-motion presentation, and zero browser errors. Put new captures under `docs/verification/arcade-selection/` with distinct gameplay-prefixed filenames.
+Use headless Playwright through the real local server to press actual keys, observe snapshots, and inspect captured action frames. A deterministic development/test scenario may arrange court positions through the existing test harness or shared simulation; production sockets must not accept a debug state-setting command. Validate normal and turbo passes, AI call-for-pass, shove hit/miss/recovery, three dunk tiers, blocked dunks, posterized fall/down/get-up frames including a game-ending dunk, muted/reduced-motion presentation, and zero browser errors. Put new captures under `docs/verification/arcade-selection/` with distinct gameplay-prefixed filenames.
 
 Run the full browser match/rematch journey and four-client latency suite for the final behavior change. Extend delayed-client comparison beyond possession and scores to the authoritative action/ball state relevant to this upgrade, and ensure these new actions actually occur during the run. Inspect changed tracked screenshots. Report measured results and visible corrections; automated evidence cannot certify subjective fun, audible output, competitive balance, or internet play.
 
