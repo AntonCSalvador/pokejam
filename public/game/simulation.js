@@ -44,9 +44,10 @@ function boundedMove(p,end,players){
 function advancePlayerState(p,dt,players){
  const elapsed=dt*1000;p.ageMs+=elapsed;
  for(const field of ['cooldownMs','stunMs','actionMs','jumpMs','recoveryMs','shoveProtectionMs'])p[field]=p[field]<=elapsed+.001?0:p[field]-elapsed;
+ if(!p.actionMs&&p.action==='posterized')p.action='idle';
  if(!p.flight)p.z=p.jumpMs>0?Math.sin(Math.PI*(1-p.jumpMs/(p.action==='dunk'?800:700)))*12:0;
  if(p.flight){
-  const f=p.flight;f.elapsed=Math.min(f.duration,f.elapsed+elapsed);const t=f.elapsed/f.duration;
+  const f=p.flight;f.elapsed=Math.min(f.duration,f.elapsed+elapsed);if(f.duration-f.elapsed<.001)f.elapsed=f.duration;const t=f.elapsed/f.duration;
   if(f.kind==='dunk'){
    p.z=t<=.5?f.peakHeight*Math.sin(Math.PI*t):f.end.z+(f.peakHeight-f.end.z)*Math.sin(Math.PI*t);
    boundedMove(p,{x:f.start.x+(f.end.x-f.start.x)*t,y:f.start.y+(f.end.y-f.start.y)*t},players);
@@ -169,6 +170,18 @@ function signature(m,p,input){
  else p.power={kind:p.ability,ms:T.powerMs};
  return p.ability==='dash'||p.ability==='pass';
 }
+function posterize(m,dunker){
+ const basket=hoop(dunker.team),victim=m.players.filter(p=>p.team!==dunker.team&&!p.stunMs&&p.action!=='posterized'&&(p.z===0||(p.action==='block'&&p.jumpMs>0))&&dist(p,dunker)<=T.posterRange&&dist(p,basket)<=T.posterHoopRange).sort((a,b)=>dist(a,dunker)-dist(b,dunker)||a.id-b.id)[0];
+ if(!victim)return null;
+ const p=victim,start={x:p.x,y:p.y,z:p.z},approach=dunker.flight?.start||{x:dunker.x-dunker.facing,y:dunker.y};
+ let dx=p.x-dunker.x,dy=p.y-dunker.y;if(Math.hypot(dx,dy)<.001){dx=dunker.x-approach.x;dy=dunker.y-approach.y;}
+ const n=Math.hypot(dx,dy)||1,end={x:p.x+dx/n*T.posterDistance,y:p.y+dy/n*T.posterDistance,z:0};
+ clearCharge(p);p.runUpMs=0;p.jumpMs=0;p.vx=p.vy=0;p.knockback=null;p.flight=null;
+ p.stunMs=T.posterFallMs+T.posterDownMs+T.posterRiseMs;pose(p,'posterized',p.stunMs);
+ if(p.z>0)p.flight={kind:'landing',start,end,elapsed:0,duration:T.posterFallMs,peakHeight:0};
+ else p.knockback={start,end,elapsed:0,duration:T.posterFallMs};
+ return p.id;
+}
 function updateBall(m){
  const b=m.ball;
  if(b.mode==='held'){const p=m.players[b.holder];b.x=p.x;b.y=p.y;b.z=2;return;}
@@ -186,7 +199,7 @@ function updateBall(m){
    m.lastPass=null;emit(m,'block',blocker.id);return;
   }
   if(t>=1){
-   if(b.kind!=='pass'&&b.accurate){if(b.kind==='dunk')land(m.players[b.from]);m.score[b.team]+=b.points;emit(m,'score',b.from,{points:b.points,assist:m.lastPass&&m.lastPass.to===b.from&&m.tick-m.lastPass.tick<=360?m.lastPass.from:null});
+   if(b.kind!=='pass'&&b.accurate){const posterized=b.kind==='dunk'?posterize(m,m.players[b.from]):null;if(b.kind==='dunk')land(m.players[b.from]);m.score[b.team]+=b.points;emit(m,'score',b.from,{points:b.points,...(posterized===null?{}:{posterized}),assist:m.lastPass&&m.lastPass.to===b.from&&m.tick-m.lastPass.tick<=360?m.lastPass.from:null});
     m.ball={mode:'loose',x:b.x,y:b.y,z:0,vx:0,vy:0,vz:0,lastTeam:b.team};
     if(m.overtime){m.phase='finished';emit(m,'finish');}else if(m.phase==='buzzer')finishRegulation(m);else stopFor(m,1-b.team,'basket');
    }else m.ball={mode:'loose',x:b.x,y:b.y,z:b.z,vx:b.kind==='pass'?0:(b.team===0?-10:10),vy:(random(m)-.5)*14,vz:0,lastTeam:b.team,rebound:b.kind!=='pass'};

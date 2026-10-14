@@ -116,3 +116,28 @@ test('bots choose reachable costly shoves, turbo passes and catchable receiver l
  stepMatch(n,act(0,i));n.tick=1;i=chooseBotInput(n,1);assert.ok(i.x<0,'receiver moves toward arriving pass');
  const before=structuredClone(n);for(const p of n.players){const input=chooseBotInput(n,p.id);assert.equal(input.turboActions&~input.pressed,0);assert.equal(input.turboActions&~6,0);before.players[p.id].bot=structuredClone(p.bot);}assert.deepEqual(n,before);
 });
+
+function atDunkFinish(tier='standing'){
+ const m=dunkCourt(tier==='standing'?90:86),p=m.players[0];if(tier!=='standing')p.runUpMs=150;if(tier==='turbo')p.turbo=100;
+ stepMatch(m,act(0,{x:tier==='standing'?0:1,pressed:A.SHOOT,turboActions:tier==='turbo'?A.SHOOT:0}));
+ while(p.flight.elapsed<p.flight.duration-17)stepMatch(m);
+ return m;
+}
+test('made contested dunk posterizes one defender for every dunk tier',()=>{
+ for(const tier of ['standing','running','turbo']){
+  const m=atDunkFinish(tier),q=m.players[2];Object.assign(q,{x:94,y:29,power:{kind:'heat',ms:2000},chargeMs:300});stepMatch(m);
+  const event=m.events.find(e=>e.kind==='score');assert.equal(event.posterized,2);assert.equal(m.score[0],2);assert.equal(q.action,'posterized');assert.equal(q.stunMs,700);assert.equal(q.power,null);assert.equal(q.jumpMs,0);assert.equal(q.chargeMs,0);
+  const x=q.x,y=q.y;advance(m,42);assert.ok(Math.hypot(q.x-x,q.y-y)<=2.001);assert.equal(q.stunMs,0);assert.equal(q.action,'idle');assert.equal(m.phase,'deadball');assert.equal(m.events.filter(e=>e.kind==='score').length,1);
+ }
+});
+test('poster chooses closest defender then slot, excluding bystanders and downed players',()=>{
+ for(const [y2,y3,stun,want] of [[30,29,0,3],[29,27,0,2],[28,29,1000,3],[40,44,0,null]]){
+  const m=atDunkFinish();Object.assign(m.players[2],{x:94,y:y2,stunMs:stun});Object.assign(m.players[3],{x:94,y:y3});Object.assign(m.players[1],{x:94,y:28});stepMatch(m);
+  assert.equal(m.events.find(e=>e.kind==='score').posterized??null,want);assert.notEqual(m.players[1].action,'posterized');assert.ok(m.players.filter(p=>p.action==='posterized').length<=1);
+ }
+});
+test('poster fall lands an airborne late blocker, but successful block takes priority',()=>{
+ const m=atDunkFinish();Object.assign(m.players[2],{x:94,y:29,action:'block',actionMs:20,jumpMs:20});stepMatch(m);const q=m.players[2];assert.equal(q.action,'posterized');assert.ok(q.z>0);assert.equal(q.flight.kind,'landing');assert.equal(q.flight.duration,150);advance(m,9);assert.equal(q.z,0);
+ const blocked=atDunkFinish();Object.assign(blocked.players[2],{x:94,y:29,action:'block',actionMs:350,jumpMs:350});stepMatch(blocked);assert.equal(blocked.ball.mode,'loose');assert.deepEqual(blocked.score,[0,0]);assert.equal(blocked.events.some(e=>'posterized'in e),false);
+ const finished=atDunkFinish();finished.phase='buzzer';Object.assign(finished.players[2],{x:94,y:29});stepMatch(finished);const before=structuredClone(finished);advance(finished,90);assert.deepEqual(finished,before);assert.equal(finished.phase,'finished');
+});
