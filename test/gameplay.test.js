@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {A,neutral} from '../public/game/data.js';
 import {stepMatch,movePlayer} from '../public/game/simulation.js';
+import * as simulation from '../public/game/simulation.js';
 import {live,giveBall,act,advance} from './gameplay-fixtures.js';
 const near=(actual,expected)=>assert.ok(Math.abs(actual-expected)<.0001,`${actual} != ${expected}`);
 
@@ -64,4 +65,45 @@ test('knockback stops at bounds or a ground body and recovery moves at forty per
  }
  const m=live(),p=m.players[0];p.recoveryMs=300;const x=p.x;movePlayer(p,{...neutral(),x:1,held:A.TURBO},1/60,m.players);near(p.x-x,p.speed*.4/60);
  const n=contact();n.players[2].x=53.4;n.players[2].z=12;movePlayer(n.players[0],{...neutral(),x:1},1/60,n.players);assert.ok(n.players[0].x>50);
+});
+
+function dunkCourt(x=90){const m=live();Object.assign(m.players[0],{x,y:28,turbo:0});giveBall(m,0);return m;}
+test('standing dunk needs no turbo and committed player carries ball to rim once',()=>{
+ const m=dunkCourt(),p=m.players[0];assert.equal(typeof simulation.dunkOption,'function');
+ const option=simulation.dunkOption(p,neutral());assert.equal(option.cost,0);near(option.reach,4.95);assert.equal(option.duration,500);assert.equal(option.peakHeight,11);
+ stepMatch(m,act(0,{pressed:A.SHOOT}));assert.equal(m.ball.kind,'dunk');assert.equal(p.flight.id,m.ball.id);
+ advance(m,15,act(0,{x:-1,pressed:A.PASS|A.SPECIAL|A.SHOOT,released:A.SHOOT}));assert.ok(p.x>90);assert.ok(p.z>8);near(m.ball.x,p.x);near(m.ball.z,p.z+2);
+ advance(m,16);assert.deepEqual(m.score,[2,0]);assert.equal(p.flight.kind,'landing');advance(m,13);assert.equal(p.z,0);assert.equal(p.flight,null);
+ advance(m,80);assert.equal(m.events.filter(e=>e.kind==='score').length,1);assert.equal(p.runUpMs,0);assert.equal(p.shotArmed,false);
+});
+test('running and turbo dunk tiers require actual forward run-up and resource',()=>{
+ for(const turbo of [false,true]){
+  const m=dunkCourt(82),p=m.players[0];p.turbo=turbo?100:0;advance(m,10,act(0,{x:1}));assert.ok(p.runUpMs>=150);
+  const input={...neutral(),x:1,pressed:A.SHOOT,turboActions:turbo?A.SHOOT:0};const o=simulation.dunkOption(p,input);
+  assert.equal(o.tier,turbo?'turbo':'running');near(o.reach,turbo?11.25:9);assert.equal(o.duration,turbo?750:650);assert.equal(o.peakHeight,turbo?18:14);
+  p.power={kind:'sky',ms:1000};near(simulation.dunkOption(p,input).reach,o.reach*1.6);p.power=null;
+  stepMatch(m,act(0,input));assert.equal(p.flight.tier,o.tier);
+ }
+ for(const kind of ['one-frame','blocked','backwards','stopped']){
+  const m=dunkCourt(82),p=m.players[0];if(kind==='blocked')Object.assign(m.players[2],{x:85.3,y:28});
+  advance(m,kind==='one-frame'?1:10,act(0,{x:kind==='backwards'?-1:1}));if(kind==='stopped')stepMatch(m);
+  assert.ok(p.runUpMs<150,kind);assert.equal(simulation.dunkOption(p,{...neutral(),x:1}),null,kind);
+ }
+ const m=dunkCourt(88),p=m.players[0];p.turbo=19;stepMatch(m,act(0,{pressed:A.SHOOT,turboActions:A.SHOOT,held:A.SHOOT}));assert.equal(p.flight,null);assert.equal(p.shotArmed,true);assert.ok(p.turbo>=19);
+});
+test('shot armed outside dunk range stays shot and held K never arms after loss or catch',()=>{
+ const m=dunkCourt(80),p=m.players[0];stepMatch(m,act(0,{pressed:A.SHOOT,held:A.SHOOT}));p.x=91;advance(m,25,act(0,{held:A.SHOOT}));stepMatch(m,act(0,{released:A.SHOOT}));assert.equal(m.ball.kind,'shot');
+ const n=dunkCourt(80);stepMatch(n,act(0,{pressed:A.SHOOT,held:A.SHOOT}));giveBall(n,1);stepMatch(n,act(0,{held:A.SHOOT}));giveBall(n,0);advance(n,28,act(0,{held:A.SHOOT}));stepMatch(n,act(0,{released:A.SHOOT}));assert.equal(n.ball.mode,'held');assert.equal(n.players[0].shotArmed,false);
+ const d=dunkCourt();stepMatch(d,act(0,{pressed:A.SHOOT,held:A.SHOOT}));advance(d,120,act(0,{held:A.SHOOT}));giveBall(d,0);stepMatch(d,act(0,{released:A.SHOOT}));assert.equal(d.ball.mode,'held');
+});
+test('low shove cancels dunk once; high dunk ignores ground shove and can be blocked',()=>{
+ const m=dunkCourt();stepMatch(m,act(0,{pressed:A.SHOOT}));Object.assign(m.players[2],{x:94,y:28});stepMatch(m,act(2,shove()));assert.equal(m.ball.mode,'loose');assert.notEqual(m.players[0].flight?.kind,'dunk');advance(m,60);assert.deepEqual(m.score,[0,0]);
+ const n=dunkCourt();stepMatch(n,act(0,{pressed:A.SHOOT}));advance(n,12);Object.assign(n.players[2],{x:n.players[0].x+4,y:28});stepMatch(n,act(2,shove()));assert.equal(n.ball.kind,'dunk');assert.equal(n.players[0].stunMs,0);
+ const b=dunkCourt();Object.assign(b.players[2],{x:93,y:28});stepMatch(b,new Map([[0,{...neutral(),pressed:A.SHOOT}],[2,{...neutral(),pressed:A.SHOOT}]]));assert.equal(b.ball.mode,'loose');assert.equal(b.players[0].flight.kind,'landing');advance(b,65);assert.deepEqual(b.score,[0,0]);assert.equal(b.events.filter(e=>e.kind==='block').length,1);
+ const same=dunkCourt();Object.assign(same.players[2],{x:94,y:28});stepMatch(same,new Map([[0,{...neutral(),pressed:A.SHOOT}],[2,{...neutral(),...shove()}]]));assert.equal(same.players[0].flight,null);assert.equal(same.ball.mode,'loose');
+});
+test('dunk released before buzzer scores once and overtime clears old action state',()=>{
+ const m=dunkCourt();m.remainingMs=1;stepMatch(m,act(0,{pressed:A.SHOOT}));assert.equal(m.phase,'buzzer');advance(m,60,act(0,{pressed:A.SHOOT}));assert.equal(m.phase,'finished');assert.deepEqual(m.score,[2,0]);
+ const n=dunkCourt();n.phase='buzzer';stepMatch(n,act(0,{pressed:A.SHOOT}));assert.notEqual(n.ball.kind,'dunk');
+ const tie=dunkCourt();tie.remainingMs=1;Object.assign(tie.players[2],{recoveryMs:300,stunMs:400,runUpMs:150,shotArmed:true});stepMatch(tie);assert.equal(tie.phase,'countdown');assert.equal(tie.players[2].stunMs,0);assert.equal(tie.players[2].recoveryMs,0);assert.equal(tie.players[2].shotArmed,false);
 });

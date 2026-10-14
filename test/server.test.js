@@ -30,6 +30,13 @@ test('different flight IDs never blend consecutive same-origin passes',()=>{
  assert.equal(sampleRemote([a,b],13).ball.x,40);
 });
 
+test('prediction cannot pull committed flight or knockback away from server path',()=>{
+ for(const field of ['flight','knockback']){
+  const match=createMatch();match.phase='live';match.players[0][field]={kind:'dunk'};const before=structuredClone(match);
+  const p=reconcileLocal({match,slot:0,ackSeq:0,controlEpoch:1},[{x:1,y:0,held:1,seq:1,controlEpoch:1}]);assert.deepEqual(p,match.players[0]);assert.deepEqual(match,before);
+ }
+});
+
 async function client(url){
  const ws=new WebSocket(url.replace('http:','ws:')+'/ws',{origin:url});
  const messages=[];ws.on('message',data=>messages.push(JSON.parse(data)));

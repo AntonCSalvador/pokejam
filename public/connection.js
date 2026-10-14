@@ -3,7 +3,7 @@ import {movePlayer} from './game/simulation.js';
 export const reconnectDelay=attempt=>Math.min(5000,500*2**Math.min(10,Math.max(0,attempt)));
 export function reconcileLocal(snapshot,pendingInputs){
  const p=structuredClone(snapshot.match.players[snapshot.slot]);
- if(snapshot.pending||!['live','buzzer'].includes(snapshot.match.phase))return p;
+ if(p.flight||p.knockback||snapshot.pending||!['live','buzzer'].includes(snapshot.match.phase))return p;
  for(const input of pendingInputs)if(input.seq>snapshot.ackSeq&&input.controlEpoch===snapshot.controlEpoch)movePlayer(p,input,DT,snapshot.match.players);
  return p;
 }

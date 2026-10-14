@@ -1,4 +1,5 @@
 import {A,TUNING as T,neutral,hoop} from './data.js';
+import {dunkOption} from './simulation.js';
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 export function chooseBotInput(m,id){
  const p=m.players[id],b=m.ball;
@@ -14,7 +15,7 @@ export function chooseBotInput(m,id){
   const mateOpen=!defenders.some(q=>distance(q,mate)<9);
   if(p.chargeMs>0){if(p.chargeMs>=T.shotSweetMs-50)input.released|=A.SHOOT;else input.held|=A.SHOOT;target=p;}
   else if(contested&&mateOpen&&distance(p,mate)>9&&distance(mate,basket)<range+8){input.pressed|=A.PASS;target=p;}
-  else if(range<p.dunk&&p.turbo>=T.dunkCost){input.pressed|=A.SHOOT;input.released|=A.SHOOT;target=p;}
+  else if(dunkOption(p,{...input,x:p.team===0?1:-1})){input.pressed|=A.SHOOT;target=basket;}
   else if((range<31&&!contested)||m.shotClockMs<2500){input.held|=A.SHOOT;input.pressed|=A.SHOOT;target=p;}
   else target={x:basket.x+(p.team===0?-13:13),y:28+Math.sin(m.tick/85+id)*13};
   if(p.meter===100)input.pressed|=A.SPECIAL;

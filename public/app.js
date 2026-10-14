@@ -78,7 +78,8 @@ function render(now){
  while(acc>=1000/60){if(!snapshot){if(!reduced){if(demo.phase==='finished')demo=createMatch({seed:demo.seed+1});stepMatch(demo,new Map(demo.players.map(p=>[p.id,chooseBotInput(demo,p.id)])));}}else if(session)sendInput();acc-=1000/60;}
  const authoritative=snapshot?.match;
  const m=authoritative?(sampleRemote(buffer,authoritative.tick+(now-receivedAt)*.06-6)||authoritative):demo;
- if(snapshot&&session){const predicted=reconcileLocal(snapshot,pendingInputs);if(localPose&&Math.hypot(predicted.x-localPose.x,predicted.y-localPose.y)<4){predicted.x=localPose.x+(predicted.x-localPose.x)*.55;predicted.y=localPose.y+(predicted.y-localPose.y)*.55;}localPose=predicted;}
+ if(snapshot&&session&&(authoritative.players[session.slot].flight||authoritative.players[session.slot].knockback||m.players[session.slot].flight||m.players[session.slot].knockback)){localPose=null;}
+ else if(snapshot&&session){const predicted=reconcileLocal(snapshot,pendingInputs);if(localPose&&Math.hypot(predicted.x-localPose.x,predicted.y-localPose.y)<4){predicted.x=localPose.x+(predicted.x-localPose.x)*.55;predicted.y=localPose.y+(predicted.y-localPose.y)*.55;}localPose=predicted;}
  if(snapshot)renderMatch(ctx,m,{assets,controlledSlot:session?.slot??-1,reducedMotion:reduced,localPose});
  else if(document.body.dataset.screen==='home')renderMatch(attract,demo,{assets,reducedMotion:reduced});
  if(++viewTick%6===0){
