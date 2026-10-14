@@ -16,7 +16,7 @@ function valid(m){
  return true;
 }
 const copy=m=>structuredClone(m);
-export function createRooms({now=Date.now}={}){
+export function createRooms({now=Date.now,matchFactory=createMatch}={}){
  const rooms=new Map(),connections=new Map();let order=0;
  const error=(c,code,message=code.replaceAll('_',' ').toLowerCase())=>c.send({type:'error',code,message});
  const captain=(room,side)=>room.slots.filter(s=>s?.connection&&Math.floor(s.slot/2)===side).sort((a,b)=>a.order-b.order)[0]??room.host;
@@ -27,7 +27,7 @@ export function createRooms({now=Date.now}={}){
   const s={room,slot,token:token(),connection:c.id,epoch:1,order:++order,queue:[],seq:0,ack:0,last:neutral(),lastAt:now(),until:0,pending:room.match?.phase==='live'||room.match?.phase==='buzzer'};
   c.session=s;room.slots[slot]=s;room.emptyAt=null;if(!room.host?.connection)room.host=s;welcome(c,s);broadcast(room);
  }
- function changeEpoch(s){s.epoch++;s.seq=0;s.ack=0;s.queue=[];s.last=neutral();s.lastAt=now();}
+ function changeEpoch(s){for(const p of s.room.match?.players||[])if(p.id===s.slot||p.bot.passRequest?.from===s.slot)p.bot.passRequest=null;s.epoch++;s.seq=0;s.ack=0;s.queue=[];s.last=neutral();s.lastAt=now();}
  function receive(cid,m){
   const c=connections.get(cid);if(!c)return;
   c.activeAt=now();if(c.replaced){error(c,'SESSION_REPLACED','This session moved to another tab.');return;}
@@ -84,7 +84,7 @@ export function createRooms({now=Date.now}={}){
   }
   if(m.type==='start'||m.type==='rematch'){
    if(room.host!==s){error(c,'HOST_ONLY');return;}
-   if(m.type==='start'&&!room.match){room.match=createMatch({seed:randomBytes(4).readUInt32LE(),selection:room.selection});}
+   if(m.type==='start'&&!room.match){room.match=matchFactory({seed:randomBytes(4).readUInt32LE(),selection:room.selection});}
    else if(m.type==='rematch'&&room.match?.phase==='finished'){room.match=null;for(const p of room.slots)if(p){p.pending=false;changeEpoch(p);if(p.connection)welcome(connections.get(p.connection),p);}}
    else {error(c,'WRONG_PHASE');return;}broadcast(room);return;
   }
@@ -108,20 +108,31 @@ export function createRooms({now=Date.now}={}){
    for(let i=0;i<4;i++){const s=room.slots[i];if(s&&!s.connection&&s.until<=now()){room.slots[i]=null;broadcast(room);}}
    if(room.emptyAt!==null&&now()-room.emptyAt>=120000){rooms.delete(room.id);continue;}
    const m=room.match;if(!m)continue;
-   const inputs=new Map();
+   const inputs=new Map(),handled=new Set();
+   for(const s of room.slots)if(s?.pending&&['deadball','countdown','finished'].includes(m.phase)){s.pending=false;changeEpoch(s);if(s.connection)welcome(connections.get(s.connection),s);broadcast(room);}
+   // Transfer controls before identifying which slots are currently covered by AI.
    for(let slot=0;slot<4;slot++){
-    const s=room.slots[slot];
-    if(s?.pending&&['deadball','countdown','finished'].includes(m.phase)){s.pending=false;changeEpoch(s);if(s.connection)welcome(connections.get(s.connection),s);broadcast(room);}
-    if(!s?.connection||s.pending){inputs.set(slot,chooseBotInput(m,slot));continue;}
+    const s=room.slots[slot];if(!s?.connection||s.pending||handled.has(s))continue;handled.add(s);
     let input;
     if(now()-s.lastAt>=250){s.queue=[];s.last=neutral();input=neutral();}
     else if(s.queue.length){input=s.queue.shift();s.ack=input.seq;s.last={...input,pressed:0,released:0,turboActions:0};}
     else input={...s.last,pressed:0,released:0,turboActions:0};
     if((input.pressed&A.SWITCH)&&!room.slots[slot^1]){
-     room.slots[slot]=null;s.slot=slot^1;room.slots[s.slot]=s;changeEpoch(s);welcome(connections.get(s.connection),s);broadcast(room);
-     inputs.set(slot,chooseBotInput(m,slot));inputs.set(s.slot,neutral());
-    }else if(!inputs.has(slot))inputs.set(slot,input);
+     room.slots[slot]=null;s.slot=slot^1;room.slots[s.slot]=s;changeEpoch(s);welcome(connections.get(s.connection),s);broadcast(room);inputs.set(s.slot,neutral());
+    }else inputs.set(slot,input);
    }
+   const ai=new Set(m.players.filter(p=>!room.slots[p.id]?.connection||room.slots[p.id].pending).map(p=>p.id));
+   for(const p of m.players){
+    const request=p.bot.passRequest;
+    if(!request||!ai.has(p.id)||ai.has(request.from)||m.phase!=='live'||m.ball.mode!=='held'||m.ball.holder!==p.id||m.tick>=request.untilTick)p.bot.passRequest=null;
+   }
+   for(const [slot,input] of inputs){
+    const p=m.players[slot],mate=m.players[slot^1];
+    if(m.phase==='live'&&(input.pressed&A.PASS)&&!(input.turboActions&A.PASS)&&!p.stunMs&&!p.recoveryMs&&!p.flight&&!p.knockback&&ai.has(mate.id)&&m.ball.mode==='held'&&m.ball.holder===mate.id){
+     mate.bot.passRequest={from:p.id,untilTick:m.tick+18};inputs.set(slot,{...input,pressed:input.pressed&~A.PASS});
+    }
+   }
+   for(const slot of ai)inputs.set(slot,chooseBotInput(m,slot));
    stepMatch(m,inputs);
    if(m.tick%3===0||m.phase==='finished')for(const s of room.slots)if(s?.connection){connections.get(s.connection)?.send({type:'snapshot',match:copy(m),slot:s.slot,controlEpoch:s.epoch,ackSeq:s.ack,pending:s.pending});}
   }

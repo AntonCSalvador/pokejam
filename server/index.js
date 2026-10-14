@@ -7,8 +7,8 @@ import {WebSocketServer,WebSocket} from 'ws';
 import {createRooms} from './rooms.js';
 const root=fileURLToPath(new URL('../public/',import.meta.url));
 const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.png':'image/png','.ttf':'font/ttf','.md':'text/plain; charset=utf-8','.txt':'text/plain; charset=utf-8'};
-export async function startServer({port=0,host='127.0.0.1',now=Date.now}={}){
- const rooms=createRooms({now});const publicRoot=await realpath(root);
+export async function startServer({port=0,host='127.0.0.1',now=Date.now,matchFactory}={}){
+ const rooms=createRooms({now,matchFactory});const publicRoot=await realpath(root);
  const server=http.createServer(async(req,res)=>{
   try{
    if(req.method!=='GET'&&req.method!=='HEAD'){res.writeHead(405);res.end();return;}

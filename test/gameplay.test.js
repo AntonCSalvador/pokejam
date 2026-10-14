@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {A,neutral} from '../public/game/data.js';
 import {stepMatch,movePlayer} from '../public/game/simulation.js';
 import * as simulation from '../public/game/simulation.js';
+import {chooseBotInput} from '../public/game/bots.js';
 import {live,giveBall,act,advance} from './gameplay-fixtures.js';
 const near=(actual,expected)=>assert.ok(Math.abs(actual-expected)<.0001,`${actual} != ${expected}`);
 
@@ -106,4 +107,12 @@ test('dunk released before buzzer scores once and overtime clears old action sta
  const m=dunkCourt();m.remainingMs=1;stepMatch(m,act(0,{pressed:A.SHOOT}));assert.equal(m.phase,'buzzer');advance(m,60,act(0,{pressed:A.SHOOT}));assert.equal(m.phase,'finished');assert.deepEqual(m.score,[2,0]);
  const n=dunkCourt();n.phase='buzzer';stepMatch(n,act(0,{pressed:A.SHOOT}));assert.notEqual(n.ball.kind,'dunk');
  const tie=dunkCourt();tie.remainingMs=1;Object.assign(tie.players[2],{recoveryMs:300,stunMs:400,runUpMs:150,shotArmed:true});stepMatch(tie);assert.equal(tie.phase,'countdown');assert.equal(tie.players[2].stunMs,0);assert.equal(tie.players[2].recoveryMs,0);assert.equal(tie.players[2].shotArmed,false);
+});
+
+test('bots choose reachable costly shoves, turbo passes and catchable receiver lanes',()=>{
+ const m=contact();let i=chooseBotInput(m,0);assert.equal(i.turboActions&A.PASS,A.PASS);
+ m.players[0].turbo=24;assert.equal(chooseBotInput(m,0).turboActions&A.PASS,0);m.players[2].x=70;assert.equal(chooseBotInput(m,0).pressed&A.PASS,0);
+ const n=contact();giveBall(n,0);Object.assign(n.players[1],{x:70,y:12});i=chooseBotInput(n,0);assert.equal(i.pressed&A.PASS,A.PASS);assert.equal(i.turboActions&A.PASS,A.PASS);
+ stepMatch(n,act(0,i));n.tick=1;i=chooseBotInput(n,1);assert.ok(i.x<0,'receiver moves toward arriving pass');
+ const before=structuredClone(n);for(const p of n.players){const input=chooseBotInput(n,p.id);assert.equal(input.turboActions&~input.pressed,0);assert.equal(input.turboActions&~6,0);before.players[p.id].bot=structuredClone(p.bot);}assert.deepEqual(n,before);
 });
