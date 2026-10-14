@@ -14,7 +14,7 @@ function segmentDistance(p,a,b){const dx=b.x-a.x,dy=b.y-a.y;const t=clamp(((p.x-
 export function createMatch({seed=7,selection=defaultSelection()}={}){
  if(!validateSelection(selection))throw new RangeError('Invalid team or player selection');
  return {tick:0,seed,teamKeys:[...selection.teamKeys],phase:'countdown',phaseMs:T.countdownMs,overtime:false,remainingMs:T.matchMs,shotClockMs:T.shotClockMs,
-  possessionTeam:null,score:[0,0],eventId:0,events:[],lastPass:null,
+  possessionTeam:null,score:[0,0],eventId:0,flightId:0,events:[],lastPass:null,
   players:selection.playerKeys.map((key,id)=>({...structuredClone(PLAYERS[key]),id,team:Math.floor(id/2),x:id<2?25+id*7:75-(id-2)*7,y:id%2?38:18,vx:0,vy:0,z:0,facing:id<2?1:-1,
    turbo:100,meter:0,chargeMs:0,cooldownMs:0,jumpMs:0,stunMs:0,action:'idle',actionMs:0,actionStart:0,ageMs:0,power:null,bot:{}})),
   ball:{mode:'loose',x:50,y:28,z:12,vx:0,vy:0,vz:0,lastTeam:null},restartTeam:0};
@@ -48,12 +48,31 @@ function possess(m,p){
  if(b.kind==='pass'&&b.team===p.team&&b.from!==p.id)m.lastPass={from:b.from,to:p.id,tick:m.tick};
  if(b.rebound)emit(m,'rebound',p.id,{defensive:b.lastTeam!==p.team});
 }
-function pass(m,p,speed=T.passSpeed){
- const target=m.players.find(q=>q.team===p.team&&q.id!==p.id);
- const duration=Math.max(.15,dist(p,target)/speed);
- const end={x:clamp(target.x+target.vx*duration*.3,2,98),y:clamp(target.y+target.vy*duration*.3,2,54)};
- m.ball={mode:'flight',kind:'pass',from:p.id,team:p.team,lastTeam:p.team,x:p.x,y:p.y,z:2,start:{x:p.x,y:p.y},end,elapsed:0,duration:duration*1000};
- p.chargeMs=0;p.power=null;pose(p,'pass',350);emit(m,'pass',p.id);
+function pass(m,p,tier='normal'){
+ const target=m.players[p.id^1];
+ if(tier==='turbo'){if(p.turbo>=T.turboPassCost)p.turbo-=T.turboPassCost;else tier='normal';}
+ const speed=T.passSpeed*(tier==='signature'?T.bulletMultiplier:tier==='turbo'?T.turboPassMultiplier:1);
+ const lead=dist(p,target)/speed*.3,end={x:clamp(target.x+target.vx*lead,2,98),y:clamp(target.y+target.vy*lead,2,54)};
+ m.ball={mode:'flight',id:++m.flightId,kind:'pass',from:p.id,target:target.id,tier,speed,heading:Math.atan2(end.y-p.y,end.x-p.x),team:p.team,lastTeam:p.team,x:p.x,y:p.y,z:2,start:{x:p.x,y:p.y},end,elapsed:0,duration:T.passLifetimeMs};
+ p.chargeMs=0;p.power=null;pose(p,'pass',350);emit(m,'pass',p.id,{tier,target:target.id});
+}
+// Earliest intersection with a catch circle, so a fast pass cannot tunnel or
+// choose a later defender merely because their slot comes first.
+function contactTime(p,a,b,radius){
+ const dx=b.x-a.x,dy=b.y-a.y,px=a.x-p.x,py=a.y-p.y,c=px*px+py*py-radius*radius;
+ if(c<=0)return 0;const aa=dx*dx+dy*dy,bb=2*(px*dx+py*dy),disc=bb*bb-4*aa*c;
+ if(!aa||disc<0)return Infinity;const t=(-bb-Math.sqrt(disc))/(2*aa);return t>=0&&t<=1?t:Infinity;
+}
+function updatePass(m,b){
+ const old={x:b.x,y:b.y},target=m.players[b.target];
+ const desired=Math.atan2(target.y-b.y,target.x-b.x),delta=Math.atan2(Math.sin(desired-b.heading),Math.cos(desired-b.heading));
+ b.heading+=clamp(delta,-T.passTurnRate*DT,T.passTurnRate*DT);
+ b.x+=Math.cos(b.heading)*b.speed*DT;b.y+=Math.sin(b.heading)*b.speed*DT;b.elapsed+=ms;
+ b.z=2+Math.sin(Math.min(1,b.elapsed/b.duration)*Math.PI)*2;
+ const catches=m.players.filter(p=>p.id!==b.from&&p.stunMs<=0&&p.z<3).map(p=>({p,t:contactTime(p,old,b,T.passCatchRadius),distance:segmentDistance(p,old,b)})).filter(c=>Number.isFinite(c.t)).sort((a,c)=>a.t-c.t||a.distance-c.distance||a.p.id-c.p.id);
+ if(catches.length){possess(m,catches[0].p);return;}
+ if(b.x<0||b.x>T.width||b.y<0||b.y>T.height){stopFor(m,1-b.team,'out');return;}
+ if(b.elapsed>=b.duration)m.ball={mode:'loose',x:b.x,y:b.y,z:b.z,vx:0,vy:0,vz:0,lastTeam:b.team};
 }
 function releaseShot(m,p,forcedMiss=false){
  const basket=hoop(p.team),range=dist(p,basket);
@@ -62,7 +81,7 @@ function releaseShot(m,p,forcedMiss=false){
  const window=p.window*(range>32?.75:1)*(contest?.55:1)*(p.power?.kind==='heat'?1.5:1);
  const accurate=!forcedMiss&&(dunk||Math.abs(p.chargeMs-T.shotSweetMs)<=window);
  const points=dunk?2:range>T.threeRange?3:2;
- m.ball={mode:'flight',kind:dunk?'dunk':'shot',from:p.id,team:p.team,lastTeam:p.team,x:p.x,y:p.y,z:2,
+ m.ball={mode:'flight',id:++m.flightId,kind:dunk?'dunk':'shot',from:p.id,team:p.team,lastTeam:p.team,x:p.x,y:p.y,z:2,
   start:{x:p.x,y:p.y},end:basket,elapsed:0,duration:dunk?800:T.shotFlightMs,accurate,points,release:{x:p.x,y:p.y}};
  if(dunk){p.turbo-=T.dunkCost;p.jumpMs=800;}
  p.chargeMs=0;p.power=null;pose(p,dunk?'dunk':'shoot',dunk?800:500);emit(m,dunk?'dunk':'shot',p.id);
@@ -74,13 +93,14 @@ function signature(m,p,input){
  if(p.power)return;
  p.meter=0;pose(p,'signature',600);emit(m,'signature',p.id,{text:p.move});
  if(p.ability==='dash'){const n=Math.hypot(input.x,input.y);p.power={kind:'windup',ms:T.dashWindupMs,dx:n?input.x/n:p.facing,dy:n?input.y/n:0};}
- else if(p.ability==='pass')pass(m,p,T.passSpeed*T.bulletMultiplier);
+ else if(p.ability==='pass')pass(m,p,'signature');
  else p.power={kind:p.ability,ms:T.powerMs};
 }
 function updateBall(m){
  const b=m.ball;
  if(b.mode==='held'){const p=m.players[b.holder];b.x=p.x;b.y=p.y;b.z=2;return;}
  if(b.mode==='flight'){
+  if(b.kind==='pass'){updatePass(m,b);return;}
   const old={x:b.x,y:b.y};b.elapsed+=ms;const t=clamp(b.elapsed/b.duration,0,1);
   b.x=b.start.x+(b.end.x-b.start.x)*t;b.y=b.start.y+(b.end.y-b.start.y)*t;
   b.z=b.kind==='pass'?2+Math.sin(t*Math.PI)*2:2+8*t+Math.sin(t*Math.PI)*(b.kind==='dunk'?8:17);
@@ -127,7 +147,7 @@ export function stepMatch(m,inputs=new Map()){
   const owns=m.ball.mode==='held'&&m.ball.holder===p.id;
   if(m.phase==='live'&&p.stunMs===0){
    if(owns){
-    if(input.pressed&A.PASS){pass(m,p);continue;}
+    if(input.pressed&A.PASS){pass(m,p,input.turboActions&A.PASS?'turbo':'normal');continue;}
     if(input.held&A.SHOOT)p.chargeMs+=ms;
     if(input.released&A.SHOOT)releaseShot(m,p);
     else if(p.chargeMs>=T.maxChargeMs)releaseShot(m,p,true);

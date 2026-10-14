@@ -44,7 +44,7 @@ export function validateSelection(value){
   return value.teamKeys.every((key,side)=>{const team=getTeam(key),pair=value.playerKeys.slice(side*2,side*2+2);return !!team&&pair[0]!==pair[1]&&pair.every(p=>team.roster.includes(p));});
 }
 export const TUNING={width:100,height:56,matchMs:180000,shotClockMs:24000,countdownMs:3000,deadballMs:1250,
-  radius:1.65,threeRange:24,shotSweetMs:450,maxChargeMs:1050,shotFlightMs:950,passSpeed:65,
+  radius:1.65,threeRange:24,shotSweetMs:450,maxChargeMs:1050,shotFlightMs:950,passSpeed:65,passLifetimeMs:2200,passTurnRate:Math.PI,passCatchRadius:3,turboPassMultiplier:1.35,turboPassCost:10,
   stealRange:4,stealRecoveryMs:650,blockRecoveryMs:750,turboDrain:32,turboFill:20,dunkCost:20,
   dashWindupMs:200,dashMs:450,powerMs:5000,bulletMultiplier:1.8};
 export const neutral=()=>({seq:0,controlEpoch:0,x:0,y:0,held:0,pressed:0,released:0,turboActions:0});

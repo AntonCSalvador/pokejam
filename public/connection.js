@@ -21,7 +21,7 @@ export function sampleRemote(buffer,targetTick){
  const t=(targetTick-a.tick)/(b.tick-a.tick),lerp=(x,y)=>x+(y-x)*t;
  result.tick=targetTick;
  for(const p of result.players){const q=b.players[p.id];for(const key of ['x','y','z','ageMs'])p[key]=lerp(p[key],q[key]);}
- const sameBall=a.ball.mode===b.ball.mode&&a.ball.holder===b.ball.holder&&a.ball.from===b.ball.from&&a.ball.kind===b.ball.kind&&a.ball.start?.x===b.ball.start?.x;
+ const sameBall=a.ball.mode===b.ball.mode&&a.ball.holder===b.ball.holder&&a.ball.from===b.ball.from&&a.ball.kind===b.ball.kind&&a.ball.id===b.ball.id;
  if(sameBall)for(const key of ['x','y','z'])result.ball[key]=lerp(a.ball[key],b.ball[key]);
  return result;
 }

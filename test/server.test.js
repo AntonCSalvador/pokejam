@@ -24,6 +24,12 @@ test('snapshot sampling interpolates positions, holds unavailable state, and ded
 });
 test('reconnection backoff starts at half a second and caps at five',()=>{assert.equal(reconnectDelay(0),500);assert.equal(reconnectDelay(20),5000);});
 
+test('different flight IDs never blend consecutive same-origin passes',()=>{
+ const a={match:createMatch()};a.match.tick=10;a.match.ball={mode:'flight',kind:'pass',id:1,from:0,start:{x:20,y:20},x:40,y:20,z:2};
+ const b=structuredClone(a);b.match.tick=16;b.match.ball.id=2;b.match.ball.x=22;
+ assert.equal(sampleRemote([a,b],13).ball.x,40);
+});
+
 async function client(url){
  const ws=new WebSocket(url.replace('http:','ws:')+'/ws',{origin:url});
  const messages=[];ws.on('message',data=>messages.push(JSON.parse(data)));
