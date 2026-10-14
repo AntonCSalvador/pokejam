@@ -47,18 +47,19 @@
   </section>
   <section id="help-screen" class="screen-page simple-page" data-screen="help" hidden>
    <h1 tabindex="-1">KNOW YOUR MOVES</h1><p>Desktop + keyboard. Empty slots play as AI.</p>
-   <div id="controls" class="controls"><p><kbd>W A S D</kbd> or <kbd>↑ ← ↓ →</kbd> Move</p><p><kbd>SHIFT</kbd> Turbo</p><p><kbd>J</kbd> Pass / steal</p><p><kbd>K</kbd> Hold and release shot / block</p><p><kbd>L</kbd> Signature at full meter</p><p><kbd>SPACE</kbd> Switch to your AI teammate</p></div>
-   <p>Release on the shot meter’s sweet spot. Near the rim? Tap K with at least 20 turbo to dunk. Score, assist, steal, block, and grab defensive rebounds to earn your signature.</p>
+   <div id="controls" class="controls"><p><kbd>W A S D</kbd> or <kbd>↑ ← ↓ →</kbd> Move</p><p><kbd>SHIFT</kbd> Turbo</p><p><kbd>J</kbd> Pass / steal / call AI pass</p><p><kbd>K</kbd> Dunk near rim / hold and release shot / block</p><p><kbd>SHIFT + J</kbd> Turbo pass / shove</p><p><kbd>SHIFT + K</kbd> Turbo dunk</p><p><kbd>L</kbd> Signature at full meter</p><p><kbd>SPACE</kbd> Switch to your AI teammate</p></div>
+   <p>Release on the shot meter’s sweet spot. Near the rim? Tap K to dunk, even at zero turbo. Run toward the hoop for more reach. Shift + K adds height and reach for 20 turbo. Shift + J costs 10 for a fast pass or 25 for a shove, hit or miss. Low turbo gives a normal pass or dunk; shoves need all 25.</p>
+   <p>A made dunk over a defender knocks them down. Score, assist, steal, block, and grab defensive rebounds to earn your signature.</p>
    <button data-home class="primary">BACK TO HOME</button>
   </section>
   <section id="arena" class="arena screen-page" data-screen="game" aria-label="Basketball court" hidden>
    <div class="scoreboard"><div class="team"><span></span><strong></strong></div><b id="home-score">00</b><div class="clock"><strong id="clock">3:00</strong><span id="match-label">2 ON 2</span></div><b id="away-score">00</b><div class="team"><span></span><strong></strong></div></div>
-   <div class="court-screen"><canvas id="court" width="640" height="360" tabindex="0" aria-label="PokéJam basketball game. WASD move, J pass or steal, K shoot or block, Shift turbo, L signature, Space switch." aria-describedby="controls"></canvas>
+   <div class="court-screen"><canvas id="court" width="640" height="360" tabindex="0" aria-label="PokéJam basketball game. WASD move; J pass, steal or call AI pass; K dunk near rim, shoot or block; Shift turbo; Shift J turbo pass or shove; Shift K turbo dunk; L signature; Space switch." aria-describedby="controls"></canvas>
     <div id="match-overlay" class="match-overlay" hidden><h2 id="overlay-title"></h2><p id="overlay-detail"></p><button id="rematch" class="primary" hidden>RUN IT BACK</button></div><div id="focus-hint" class="focus-hint" hidden>Click the court to play</div>
    </div>
    <div class="court-foot"><span id="court-status">THE INDIGO ARENA</span><span id="shot-clock">SHOT CLOCK 24</span></div>
    <div id="player-bar" class="player-bar" hidden><strong id="player-name"></strong><div><label for="turbo">TURBO</label><meter id="turbo" min="0" max="100" value="100"></meter></div><div><label id="signature-name" for="meter">SIGNATURE</label><meter id="meter" min="0" max="100" value="0"></meter></div><span id="power-hint"></span></div>
-   <p class="game-controls">WASD move · Shift turbo · J pass / steal · K shoot / block · L signature · Space switch</p>
+   <p class="game-controls">WASD move · Shift turbo · J pass / steal / call · Shift+J fast pass / shove · K dunk / shoot / block · Shift+K turbo dunk · L signature · Space switch</p>
   </section>
   <nav id="selection-nav" class="selection-nav" aria-label="Selection steps" hidden><button id="selection-back">BACK</button><span id="step-label"></span><button id="selection-next" class="primary">CHOOSE PLAYERS</button></nav>
   <div id="room-tools" class="room-tools" hidden><span id="room-note">AI fills empty spots.</span><button id="invite" class="quiet">Copy invite</button><input id="invite-fallback" aria-label="Court invite link" readonly hidden></div>

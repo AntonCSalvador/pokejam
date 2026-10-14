@@ -1,0 +1,20 @@
+{
+  "scenarios": [
+    "final-poster",
+    "normal-pass",
+    "turbo-pass",
+    "intercept",
+    "call",
+    "shove-hit",
+    "shove-miss",
+    "standing-dunk",
+    "running-dunk",
+    "turbo-dunk",
+    "blocked-dunk",
+    "poster",
+    "poster-reduced",
+    "controls"
+  ],
+  "browserErrors": [],
+  "atlases": 7
+}

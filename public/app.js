@@ -10,15 +10,16 @@ const $=id=>document.getElementById(id),canvas=$('court'),ctx=canvas.getContext(
 let assets={manifest:{},images:new Map(),failures:[]},session=null,connection=null,lobby=null,snapshot=null,seq=0,muted=true,ready=false,busy=false;
 let reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,demo=createMatch({seed:19}),frameTime=performance.now(),acc=0,viewTick=0;
 let joiningRoom=new URLSearchParams(location.search).get('room'),lastFeedback=0;
-let generation=0,retry=0,retryTimer=null,connected=false,pendingInputs=[],buffer=[],receivedAt=0,localPose=null;
+let finalPlayback=null,pendingSwitchSeq=null;
+let generation=0,retry=0,retryTimer=null,connected=false,inputReady=false,pendingInputs=[],buffer=[],receivedAt=0,localPose=null;
 const notice=message=>{$('notice').textContent=message;$('notice').hidden=!message;};
 function saveSession(){try{sessionStorage.setItem('pokejam-session',JSON.stringify(session));}catch{}}
 function syncMenu(){menu.update({lobby,session,match:snapshot?.match,assets,reduced,ready,busy});}
 function clearControls(){controls.reset();if(session&&snapshot)sendInput();}
-function sendInput(){if(!connected||!session)return;const i={type:'input',...controls.read(),seq:++seq,controlEpoch:session.controlEpoch};if(connection?.send(i)){pendingInputs.push(i);if(pendingInputs.length>120)pendingInputs.shift();}controls.consumeEdges();}
-function resetPrediction(){seq=0;controls.reset();pendingInputs=[];localPose=null;}
+function sendInput(){if(!connected||!inputReady||!session)return;const i={type:'input',...controls.read(),seq:++seq,controlEpoch:session.controlEpoch};if(connection?.send(i)){pendingInputs.push(i);if(pendingInputs.length>120)pendingInputs.shift();if(i.pressed&A.SWITCH){pendingSwitchSeq=i.seq;inputReady=false;}}controls.consumeEdges();}
+function resetPrediction(){seq=0;pendingSwitchSeq=null;controls.reset();pendingInputs=[];localPose=null;}
 function open(action){
- const current=++generation;clearTimeout(retryTimer);connected=false;connection?.close();
+ const current=++generation;clearTimeout(retryTimer);connected=false;inputReady=false;connection?.close();
  $('connection-state').textContent='CONNECTING';
  connection=connectGame({onStatus(status){
   if(current!==generation)return;connected=status==='open';
@@ -32,11 +33,16 @@ function open(action){
  },onMessage(m){if(current===generation)onMessage(m);}});
 }
 function onMessage(m){
- if(m.type==='welcome'){session=m;busy=false;retry=0;saveSession();joiningRoom=m.roomId;history.replaceState(null,'',`?room=${m.roomId}`);resetPrediction();buffer=[];notice('');syncMenu();}
- if(m.type==='lobby'){lobby=m;busy=false;if(!m.started){snapshot=null;buffer=[];lastFeedback=0;resetPrediction();$('player-bar').hidden=true;$('match-overlay').hidden=true;}syncMenu();}
+ if(m.type==='welcome'){inputReady=true;session=m;busy=false;retry=0;saveSession();joiningRoom=m.roomId;history.replaceState(null,'',`?room=${m.roomId}`);resetPrediction();buffer=[];notice('');syncMenu();}
+ if(m.type==='lobby'){lobby=m;busy=false;if(!m.started){snapshot=null;finalPlayback=null;buffer=[];lastFeedback=0;resetPrediction();$('player-bar').hidden=true;$('match-overlay').hidden=true;}syncMenu();}
  if(m.type==='snapshot'){
+  if(pendingSwitchSeq!==null&&m.ackSeq>=pendingSwitchSeq){pendingSwitchSeq=null;inputReady=true;}
+  if(snapshot&&snapshot.match.phase!==m.match.phase)controls.reset();
   if(session&&session.controlEpoch!==m.controlEpoch)resetPrediction();
   if(snapshot&&(snapshot.match.phase!==m.match.phase||snapshot.match.ball.holder!==m.match.ball.holder))localPose=null;
+  if(m.match.phase==='finished'&&m.match.events.findLast(e=>e.kind==='score')?.posterized!==undefined){
+   const key=`${m.match.seed}:${m.match.events.findLast(e=>e.kind==='score').id}`;if(finalPlayback?.key!==key)finalPlayback={key,at:performance.now()};
+  }else finalPlayback=null;
   snapshot=m;if(appendSnapshot(buffer,m))receivedAt=performance.now();
   pendingInputs=pendingInputs.filter(i=>i.seq>m.ackSeq&&i.controlEpoch===m.controlEpoch);
   if(session){session.slot=m.slot;session.controlEpoch=m.controlEpoch;saveSession();}
@@ -47,7 +53,7 @@ function onMessage(m){
  if(m.type==='error'){
   busy=false;notice(m.message);if(m.code==='SLOT_TAKEN'&&joiningRoom)connection.send({type:'inspect',roomId:joiningRoom});
   if(['ROOM_GONE','SESSION_EXPIRED','SESSION_REPLACED'].includes(m.code)){
-   session=null;saveSession();snapshot=lobby=null;buffer=[];resetPrediction();clearTimeout(retryTimer);$('player-bar').hidden=true;$('match-overlay').hidden=true;
+   session=null;saveSession();snapshot=lobby=null;finalPlayback=null;buffer=[];resetPrediction();clearTimeout(retryTimer);$('player-bar').hidden=true;$('match-overlay').hidden=true;
    const room=joiningRoom;joiningRoom=null;++generation;connection?.close();connected=false;$('connection-state').textContent='CHOOSE A COURT';
    if(m.code==='SESSION_EXPIRED'&&room){joiningRoom=room;open({type:'inspect',roomId:room});}
   }
@@ -55,8 +61,8 @@ function onMessage(m){
  }
 }
 function home(){
- ++generation;clearTimeout(retryTimer);connected=false;connection?.close();connection=null;
- session=null;saveSession();joiningRoom=null;snapshot=lobby=null;buffer=[];retry=0;lastFeedback=0;busy=false;resetPrediction();
+ ++generation;clearTimeout(retryTimer);connected=false;inputReady=false;connection?.close();connection=null;
+ session=null;saveSession();joiningRoom=null;snapshot=lobby=null;finalPlayback=null;buffer=[];retry=0;lastFeedback=0;busy=false;resetPrediction();
  history.replaceState(null,'','/');$('player-bar').hidden=true;$('match-overlay').hidden=true;$('invite-fallback').hidden=true;
  $('connection-state').textContent='THE INDIGO ARENA';notice('');syncMenu();menu.show('home');
 }
@@ -77,10 +83,12 @@ function render(now){
  const elapsed=Math.min(100,now-frameTime);frameTime=now;acc+=elapsed;
  while(acc>=1000/60){if(!snapshot){if(!reduced){if(demo.phase==='finished')demo=createMatch({seed:demo.seed+1});stepMatch(demo,new Map(demo.players.map(p=>[p.id,chooseBotInput(demo,p.id)])));}}else if(session)sendInput();acc-=1000/60;}
  const authoritative=snapshot?.match;
- const m=authoritative?(sampleRemote(buffer,authoritative.tick+(now-receivedAt)*.06-6)||authoritative):demo;
+ const m=authoritative?.phase==='finished'?authoritative:authoritative?(sampleRemote(buffer,authoritative.tick+(now-receivedAt)*.06-6)||authoritative):demo;
  if(snapshot&&session&&(authoritative.players[session.slot].flight||authoritative.players[session.slot].knockback||m.players[session.slot].flight||m.players[session.slot].knockback)){localPose=null;}
  else if(snapshot&&session){const predicted=reconcileLocal(snapshot,pendingInputs);if(localPose&&Math.hypot(predicted.x-localPose.x,predicted.y-localPose.y)<4){predicted.x=localPose.x+(predicted.x-localPose.x)*.55;predicted.y=localPose.y+(predicted.y-localPose.y)*.55;}localPose=predicted;}
- if(snapshot)renderMatch(ctx,m,{assets,controlledSlot:session?.slot??-1,reducedMotion:reduced,localPose});
+ const finishElapsedMs=finalPlayback?now-finalPlayback.at:0;
+ const resultsReady=m.phase==='finished'&&(!finalPlayback||finishElapsedMs>=700);
+ if(snapshot)renderMatch(ctx,m,{assets,controlledSlot:session?.slot??-1,reducedMotion:reduced,localPose,controlInput:controls.read(),finishElapsedMs});
  else if(document.body.dataset.screen==='home')renderMatch(attract,demo,{assets,reducedMotion:reduced});
  if(++viewTick%6===0){
   document.querySelectorAll('.screen-page:not([hidden]) canvas[data-portrait]').forEach(c=>drawPortrait(c.getContext('2d'),c.dataset.portrait,assets,reduced?0:now/16));
@@ -89,7 +97,7 @@ function render(now){
    $('home-score').textContent=String(m.score[0]).padStart(2,'0');$('away-score').textContent=String(m.score[1]).padStart(2,'0');const seconds=Math.ceil(m.remainingMs/1000);$('clock').textContent=m.overtime?'OT':`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
    $('match-label').textContent=m.overtime?'NEXT BASKET WINS':'ONLINE · 2 ON 2';$('shot-clock').textContent=`SHOT CLOCK ${Math.ceil(m.shotClockMs/1000)}`;
    $('focus-hint').hidden=m.phase==='finished'||document.activeElement===canvas;
-   $('match-overlay').hidden=m.phase!=='finished';$('rematch').hidden=m.phase!=='finished'||lobby?.host!==session?.slot;
+   $('match-overlay').hidden=!resultsReady;$('rematch').hidden=!resultsReady||lobby?.host!==session?.slot;
    if(m.phase==='finished'){$('overlay-title').textContent=teams[m.score[0]>m.score[1]?0:1].short+' WINS!';$('overlay-detail').textContent=`${m.score[0]} — ${m.score[1]} · ${lobby?.host===session?.slot?'Run it back?':'Waiting for the host to rematch.'}`;}
    if(session){const p=m.players[session.slot];$('player-name').textContent=p.name;$('turbo').value=p.turbo;$('meter').value=p.meter;$('signature-name').textContent=p.move.toUpperCase();$('power-hint').textContent=p.meter>=100?'SIGNATURE READY · PRESS L':'Score, assist, steal, block. Fill your meter.';$('court-status').textContent=`YOU: ${p.name.toUpperCase()} · ${teams[p.team].short}`;}
   }
