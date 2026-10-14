@@ -4,6 +4,18 @@ A Pokémon basketball fan game with seven NBA-inspired franchises and 21 selecta
 
 **Current focus: local development and gameplay features. Hosting is deferred.** For a fresh coding session, start with [AGENTS.md](AGENTS.md), which links the design, architecture, verification evidence, and known issues. The original implementation plan is completed history.
 
+## Quick look
+
+**Pick your lineup.** Choose franchises, compare player ratings, and bring two starters to the matchup.
+
+![PokéJam moving from the title screen through team selection, player ratings, and the matchup](docs/verification/arcade-selection/demo-selection.gif)
+
+**Hit the court.** Steals, a signature pass, and Nidoking dunks in live 2-on-2 basketball against AI.
+
+![PokéJam live basketball with four Pokémon moving, defending, and scoring](docs/verification/arcade-selection/demo-gameplay.gif)
+
+Silent loops captured from the local game in Microsoft Edge. See [Controls](#controls) to try it yourself.
+
 ## Run
 
 Install Node.js 24 or newer, then run from this directory:
