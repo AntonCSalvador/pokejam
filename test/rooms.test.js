@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createRooms} from '../server/rooms.js';
 import {A} from '../public/game/data.js';
 function harness(){let time=1000;const r=createRooms({now:()=>time});return {r,client(){const messages=[];const id=r.connect(m=>messages.push(structuredClone(m)));return {id,messages,send:m=>r.receive(id,m),last:type=>messages.findLast(m=>m.type===type)};},advance(ticks){for(let i=0;i<ticks;i++){time+=1000/60;r.tick();}},wait(ms){time+=ms;r.tick();}};}
-const controls=(w,seq,extra={})=>({type:'input',seq,controlEpoch:w.controlEpoch,x:0,y:0,held:0,pressed:0,released:0,...extra});
+const controls=(w,seq,extra={})=>({type:'input',seq,controlEpoch:w.controlEpoch,x:0,y:0,held:0,pressed:0,released:0,turboActions:0,...extra});
 test('captains choose valid franchises and starters without overwriting people',()=>{
  const h=harness(),a=h.client();a.send({type:'create'});const roomId=a.last('welcome').roomId;
  assert.deepEqual(a.last('lobby').teamKeys,['chicago','miami']);assert.deepEqual(a.last('lobby').captains,[0,0]);
@@ -88,4 +88,12 @@ test('short shoot tap survives a delayed batch and old switch-epoch actions are 
  assert.equal(a.last('snapshot').match.players[0].action,'block');assert.ok(a.last('snapshot').match.players[0].jumpMs>0);
  a.send(controls(w,2,{pressed:A.SWITCH}));a.send(controls(w,3,{x:1,held:A.SHOOT}));h.advance(3);
  const switched=a.last('snapshot');assert.equal(switched.slot,1);assert.equal(switched.controlEpoch,w.controlEpoch+1);assert.equal(switched.match.players[1].chargeMs,0);assert.equal(switched.ackSeq,0);
+});
+
+test('room validates latched modifiers and preserves a quick turbo shoot chord',()=>{
+ const h=harness(),a=h.client();a.send({type:'create'});const w=a.last('welcome');a.send({type:'start'});h.advance(183);
+ for(const turboActions of [A.SPECIAL,-1,.5,A.PASS]){a.send(controls(w,1,{turboActions}));assert.equal(a.last('error').code,'BAD_MESSAGE');}
+ a.messages.length=0;a.send(controls(w,1,{pressed:A.SHOOT,released:A.SHOOT,turboActions:A.SHOOT}));h.advance(3);
+ assert.equal(a.last('error'),undefined);assert.equal(a.last('snapshot').match.players[0].action,'block');
+ const start=a.last('snapshot').match.players[0].actionStart;h.advance(6);assert.equal(a.last('snapshot').match.players[0].actionStart,start);
 });

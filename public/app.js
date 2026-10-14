@@ -4,18 +4,19 @@ import {chooseBotInput} from './game/bots.js';
 import {loadSprites,renderMatch,drawPortrait,setSoundMuted} from './render.js';
 import {connectGame,reconcileLocal,sampleRemote,appendSnapshot,reconnectDelay} from './connection.js';
 import {createMenu} from './menu.js';
+import {createControls} from './controls.js';
+const controls=createControls();
 const $=id=>document.getElementById(id),canvas=$('court'),ctx=canvas.getContext('2d'),attract=$('attract').getContext('2d');
-let assets={manifest:{},images:new Map(),failures:[]},session=null,connection=null,lobby=null,snapshot=null,seq=0,keys=new Set(),pressed=0,released=0,muted=true,ready=false,busy=false;
+let assets={manifest:{},images:new Map(),failures:[]},session=null,connection=null,lobby=null,snapshot=null,seq=0,muted=true,ready=false,busy=false;
 let reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,demo=createMatch({seed:19}),frameTime=performance.now(),acc=0,viewTick=0;
 let joiningRoom=new URLSearchParams(location.search).get('room'),lastFeedback=0;
 let generation=0,retry=0,retryTimer=null,connected=false,pendingInputs=[],buffer=[],receivedAt=0,localPose=null;
 const notice=message=>{$('notice').textContent=message;$('notice').hidden=!message;};
 function saveSession(){try{sessionStorage.setItem('pokejam-session',JSON.stringify(session));}catch{}}
 function syncMenu(){menu.update({lobby,session,match:snapshot?.match,assets,reduced,ready,busy});}
-function clearControls(){keys.clear();pressed=released=0;if(session&&snapshot)sendInput();}
-function input(){const i=neutral();i.x=Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft'));i.y=Number(keys.has('KeyS')||keys.has('ArrowDown'))-Number(keys.has('KeyW')||keys.has('ArrowUp'));for(const [key,bit]of Object.entries(buttons))if(keys.has(key))i.held|=bit;i.pressed=pressed;i.released=released;return i;}
-function sendInput(){if(!connected||!session)return;const i={type:'input',...input(),seq:++seq,controlEpoch:session.controlEpoch};if(connection?.send(i)){pendingInputs.push(i);if(pendingInputs.length>120)pendingInputs.shift();}pressed=released=0;}
-function resetPrediction(){seq=0;keys.clear();pressed=released=0;pendingInputs=[];localPose=null;}
+function clearControls(){controls.reset();if(session&&snapshot)sendInput();}
+function sendInput(){if(!connected||!session)return;const i={type:'input',...controls.read(),seq:++seq,controlEpoch:session.controlEpoch};if(connection?.send(i)){pendingInputs.push(i);if(pendingInputs.length>120)pendingInputs.shift();}controls.consumeEdges();}
+function resetPrediction(){seq=0;controls.reset();pendingInputs=[];localPose=null;}
 function open(action){
  const current=++generation;clearTimeout(retryTimer);connected=false;connection?.close();
  $('connection-state').textContent='CONNECTING';
@@ -65,10 +66,8 @@ const menu=createMenu({
  onSend(message){if(message.type==='start')setSoundMuted(muted);connection?.send(message);},onHome:home,
  async onInvite(){if(!lobby)return;const link=`${location.origin}/?room=${lobby.roomId}`;try{await navigator.clipboard.writeText(link);notice('Invite copied. Send it to your crew.');}catch{$('invite-fallback').hidden=false;$('invite-fallback').value=link;$('invite-fallback').select();}}
 });
-const buttons={ShiftLeft:A.TURBO,ShiftRight:A.TURBO,KeyJ:A.PASS,KeyK:A.SHOOT,KeyL:A.SPECIAL,Space:A.SWITCH};
-const moveKeys=['KeyW','KeyA','KeyS','KeyD','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'];
-window.addEventListener('keydown',e=>{if(document.activeElement!==canvas||!snapshot||(!buttons[e.code]&&!moveKeys.includes(e.code)))return;e.preventDefault();if(!keys.has(e.code))pressed|=buttons[e.code]||0;keys.add(e.code);});
-window.addEventListener('keyup',e=>{if(keys.has(e.code)){released|=buttons[e.code]||0;keys.delete(e.code);e.preventDefault();}});
+window.addEventListener('keydown',e=>{if(document.activeElement===canvas&&snapshot&&controls.keyDown(e.code))e.preventDefault();});
+window.addEventListener('keyup',e=>{if(controls.keyUp(e.code))e.preventDefault();});
 window.addEventListener('blur',clearControls);canvas.addEventListener('blur',clearControls);document.addEventListener('visibilitychange',()=>{if(document.hidden)clearControls();});canvas.onclick=()=>canvas.focus();
 document.querySelector('.brand').onclick=e=>{e.preventDefault();home();};
 $('sound').onclick=()=>{muted=!muted;setSoundMuted(muted);$('sound').textContent=muted?'Sound off':'Sound on';$('sound').setAttribute('aria-pressed',String(muted));};

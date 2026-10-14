@@ -8,7 +8,7 @@ import {createMatch} from '../public/game/simulation.js';
 
 test('prediction replays only unacknowledged current-epoch movement without changing outcomes',()=>{
  const match=createMatch();match.phase='live';const snapshot={match,slot:0,controlEpoch:2,ackSeq:4};
- const original=structuredClone(match);const frame={x:1,y:0,held:0,pressed:16,released:0};
+ const original=structuredClone(match);const frame={x:1,y:0,held:0,pressed:16,released:0,turboActions:0};
  assert.deepEqual(reconcileLocal(snapshot,[]),match.players[0]);
  assert.deepEqual(reconcileLocal(snapshot,[{...frame,seq:5,controlEpoch:1},{...frame,seq:4,controlEpoch:2}]),match.players[0]);
  const predicted=reconcileLocal(snapshot,[{...frame,seq:5,controlEpoch:2}]);assert.ok(predicted.x>match.players[0].x);assert.deepEqual(match,original);
@@ -44,8 +44,8 @@ test('real HTTP and four sockets share authoritative match and reject invalid tr
  a.send({type:'selectPlayer',slot:0,playerKey:'slowking'});assert.equal((await a.next('error')).code,'MATCH_STARTED');
  a.send({type:'selectPlayer',slot:0,playerKey:'slowking',speed:999});assert.equal((await a.next('error')).code,'BAD_MESSAGE');
  a.ws.send('{');assert.equal((await a.next('error')).code,'BAD_MESSAGE');
- a.send({type:'input',seq:1,controlEpoch:w.controlEpoch,x:2,y:0,held:0,pressed:0,released:0});assert.equal((await a.next('error')).code,'BAD_MESSAGE');
- a.send({type:'input',seq:1,controlEpoch:w.controlEpoch,x:0,y:0,held:0,pressed:0,released:0,score:999});assert.equal((await a.next('error')).code,'BAD_MESSAGE');
+ a.send({type:'input',seq:1,controlEpoch:w.controlEpoch,x:2,y:0,held:0,pressed:0,released:0,turboActions:0});assert.equal((await a.next('error')).code,'BAD_MESSAGE');
+ a.send({type:'input',seq:1,controlEpoch:w.controlEpoch,x:0,y:0,held:0,pressed:0,released:0,turboActions:0,score:999});assert.equal((await a.next('error')).code,'BAD_MESSAGE');
  const wrong=new WebSocket(server.url.replace('http:','ws:')+'/ws',{origin:'https://wrong.example'});
  const status=await new Promise(resolve=>{wrong.on('unexpected-response',(_,r)=>{r.resume();resolve(r.statusCode);wrong.terminate();});wrong.on('error',()=>{});});assert.equal(status,403);
 });

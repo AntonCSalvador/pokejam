@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createMatch, stepMatch, movePlayer } from '../public/game/simulation.js';
 import { A } from '../public/game/data.js';
 import { chooseBotInput } from '../public/game/bots.js';
-const input = (fields={}) => ({x:0,y:0,held:0,pressed:0,released:0,...fields});
+const input = (fields={}) => ({x:0,y:0,held:0,pressed:0,released:0,turboActions:0,...fields});
 function advance(m, ticks, inputs=new Map()) { for(let i=0;i<ticks;i++) stepMatch(m,inputs); }
 function live() {
   const m=createMatch({seed:7}); advance(m,180);

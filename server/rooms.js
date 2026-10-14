@@ -3,7 +3,7 @@ import {createMatch,stepMatch} from '../public/game/simulation.js';
 import {chooseBotInput} from '../public/game/bots.js';
 import {A,neutral,getTeam,defaultSelection,validateSelection} from '../public/game/data.js';
 const id=()=>randomBytes(12).toString('base64url'),token=()=>randomBytes(32).toString('base64url');
-const fields={create:[],inspect:['roomId'],join:['roomId','slot'],claim:['slot'],selectTeam:['side','teamKey'],selectPlayer:['slot','playerKey'],start:[],input:['seq','controlEpoch','x','y','held','pressed','released'],reconnect:['roomId','token'],rematch:[]};
+const fields={create:[],inspect:['roomId'],join:['roomId','slot'],claim:['slot'],selectTeam:['side','teamKey'],selectPlayer:['slot','playerKey'],start:[],input:['seq','controlEpoch','x','y','held','pressed','released','turboActions'],reconnect:['roomId','token'],rematch:[]};
 function valid(m){
  if(!m||typeof m!=='object'||Array.isArray(m)||!Object.hasOwn(fields,m.type))return false;
  const keys=fields[m.type];if(Object.keys(m).length!==keys.length+1||keys.some(k=>!Object.hasOwn(m,k)))return false;
@@ -12,7 +12,7 @@ function valid(m){
  if('side'in m&&m.side!==0&&m.side!==1)return false;
  for(const key of ['teamKey','playerKey'])if(key in m&&(typeof m[key]!=='string'||m[key].length>32))return false;
  if('token'in m&&(typeof m.token!=='string'||m.token.length!==43))return false;
- if(m.type==='input')return ['seq','controlEpoch','held','pressed','released'].every(k=>Number.isSafeInteger(m[k])&&m[k]>=0)&&m.seq>0&&['held','pressed','released'].every(k=>m[k]<=31)&&['x','y'].every(k=>Number.isFinite(m[k])&&Math.abs(m[k])<=1);
+ if(m.type==='input')return ['seq','controlEpoch','held','pressed','released','turboActions'].every(k=>Number.isSafeInteger(m[k])&&m[k]>=0)&&m.seq>0&&(m.turboActions&~(A.PASS|A.SHOOT))===0&&(m.turboActions&~m.pressed)===0&&m.turboActions<=6&&['held','pressed','released'].every(k=>m[k]<=31)&&['x','y'].every(k=>Number.isFinite(m[k])&&Math.abs(m[k])<=1);
  return true;
 }
 const copy=m=>structuredClone(m);
@@ -115,8 +115,8 @@ export function createRooms({now=Date.now}={}){
     if(!s?.connection||s.pending){inputs.set(slot,chooseBotInput(m,slot));continue;}
     let input;
     if(now()-s.lastAt>=250){s.queue=[];s.last=neutral();input=neutral();}
-    else if(s.queue.length){input=s.queue.shift();s.ack=input.seq;s.last={...input,pressed:0,released:0};}
-    else input={...s.last,pressed:0,released:0};
+    else if(s.queue.length){input=s.queue.shift();s.ack=input.seq;s.last={...input,pressed:0,released:0,turboActions:0};}
+    else input={...s.last,pressed:0,released:0,turboActions:0};
     if((input.pressed&A.SWITCH)&&!room.slots[slot^1]){
      room.slots[slot]=null;s.slot=slot^1;room.slots[s.slot]=s;changeEpoch(s);welcome(connections.get(s.connection),s);broadcast(room);
      inputs.set(slot,chooseBotInput(m,slot));inputs.set(s.slot,neutral());

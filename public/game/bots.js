@@ -4,7 +4,7 @@ export function chooseBotInput(m,id){
  const p=m.players[id],b=m.ball;
  if(m.phase!=='live'&&m.phase!=='buzzer')return neutral();
  const cached=p.bot.input;
- if(m.tick%6!==id%6&&cached)return {...cached,pressed:0,released:0};
+ if(m.tick%6!==id%6&&cached)return {...cached,pressed:0,released:0,turboActions:0};
  const input=neutral(),basket=hoop(p.team),mate=m.players[id^1];
  let target=b;
  const owns=b.mode==='held'&&b.holder===id;
