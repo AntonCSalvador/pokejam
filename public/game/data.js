@@ -45,7 +45,7 @@ export function validateSelection(value){
 }
 export const TUNING={width:100,height:56,matchMs:180000,shotClockMs:24000,countdownMs:3000,deadballMs:1250,
   radius:1.65,threeRange:24,shotSweetMs:450,maxChargeMs:1050,shotFlightMs:950,passSpeed:65,passLifetimeMs:2200,passTurnRate:Math.PI,passCatchRadius:3,turboPassMultiplier:1.35,turboPassCost:10,
-  stealRange:4,stealRecoveryMs:650,blockRecoveryMs:750,turboDrain:32,turboFill:20,dunkCost:20,
+  shoveCost:25,shoveRange:4.5,shoveCooldownMs:900,shoveRecoveryMs:300,shoveStunMs:400,shoveProtectionMs:300,knockbackMs:150,knockbackDistance:5,stealRange:4,stealRecoveryMs:650,blockRecoveryMs:750,turboDrain:32,turboFill:20,dunkCost:20,
   dashWindupMs:200,dashMs:450,powerMs:5000,bulletMultiplier:1.8};
 export const neutral=()=>({seq:0,controlEpoch:0,x:0,y:0,held:0,pressed:0,released:0,turboActions:0});
 export const hoop=team=>({x:team===0?94:6,y:28});

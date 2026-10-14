@@ -16,22 +16,56 @@ export function createMatch({seed=7,selection=defaultSelection()}={}){
  return {tick:0,seed,teamKeys:[...selection.teamKeys],phase:'countdown',phaseMs:T.countdownMs,overtime:false,remainingMs:T.matchMs,shotClockMs:T.shotClockMs,
   possessionTeam:null,score:[0,0],eventId:0,flightId:0,events:[],lastPass:null,
   players:selection.playerKeys.map((key,id)=>({...structuredClone(PLAYERS[key]),id,team:Math.floor(id/2),x:id<2?25+id*7:75-(id-2)*7,y:id%2?38:18,vx:0,vy:0,z:0,facing:id<2?1:-1,
-   turbo:100,meter:0,chargeMs:0,cooldownMs:0,jumpMs:0,stunMs:0,action:'idle',actionMs:0,actionStart:0,ageMs:0,power:null,bot:{}})),
+   turbo:100,meter:0,chargeMs:0,cooldownMs:0,jumpMs:0,stunMs:0,recoveryMs:0,shoveProtectionMs:0,knockback:null,action:'idle',actionMs:0,actionStart:0,ageMs:0,power:null,bot:{}})),
   ball:{mode:'loose',x:50,y:28,z:12,vx:0,vy:0,vz:0,lastTeam:null},restartTeam:0};
 }
 export function movePlayer(p,input,dt,players=[]){
  const length=Math.hypot(input.x,input.y),scale=Math.max(1,length);
  const turboHeld=!!(input.held&A.TURBO),turbo=turboHeld&&p.turbo>0&&length>0;
  p.turbo=clamp(p.turbo+(turboHeld?-T.turboDrain:T.turboFill)*dt,0,100);
- let speed=p.speed*(turbo?1.65:1);
+ let speed=p.speed*(p.recoveryMs>0?.4:turbo?1.65:1);
  let dx=input.x/scale,dy=input.y/scale;
  if(p.power?.kind==='dash'){dx=p.power.dx;dy=p.power.dy;speed=p.speed*2;}
- if(p.stunMs>0||p.power?.kind==='windup'){dx=dy=0;}
+ if(p.stunMs>0||p.knockback||p.power?.kind==='windup'){dx=dy=0;}
  const nx=clamp(p.x+dx*speed*dt,2,98),ny=clamp(p.y+dy*speed*dt,2,54);
- const blocked=players.some(other=>other.id!==p.id&&segmentDistance(other,p,{x:nx,y:ny})<T.radius*2&&dist(other,{x:nx,y:ny})<dist(other,p));
+ const blocked=players.some(other=>other.id!==p.id&&p.z<=3&&other.z<=3&&segmentDistance(other,p,{x:nx,y:ny})<T.radius*2&&dist(other,{x:nx,y:ny})<dist(other,p));
  p.vx=blocked?0:(nx-p.x)/dt;p.vy=blocked?0:(ny-p.y)/dt;
  if(!blocked){p.x=nx;p.y=ny;}
  if(Math.abs(dx)>.1)p.facing=dx>0?1:-1;
+}
+function clearCharge(p){p.chargeMs=0;p.shotArmed=false;p.power=null;}
+function boundedMove(p,end,players){
+ const next={x:clamp(end.x,2,98),y:clamp(end.y,2,54)};let fraction=1;
+ if(p.z<=3)for(const q of players)if(q.id!==p.id&&q.z<=3&&dist(q,next)<dist(q,p))fraction=Math.min(fraction,contactTime(q,p,next,T.radius*2));
+ if(Number.isFinite(fraction)){p.x+=(next.x-p.x)*fraction;p.y+=(next.y-p.y)*fraction;}
+}
+function advancePlayerState(p,dt,players){
+ const elapsed=dt*1000;p.ageMs+=elapsed;
+ for(const field of ['cooldownMs','stunMs','actionMs','jumpMs','recoveryMs','shoveProtectionMs'])p[field]=p[field]<=elapsed+.001?0:p[field]-elapsed;
+ p.z=p.jumpMs>0?Math.sin(Math.PI*(1-p.jumpMs/(p.action==='dunk'?800:700)))*12:0;
+ if(p.knockback){const k=p.knockback;k.elapsed=Math.min(k.duration,k.elapsed+elapsed);const t=k.elapsed/k.duration;boundedMove(p,{x:k.start.x+(k.end.x-k.start.x)*t,y:k.start.y+(k.end.y-k.start.y)*t},players);if(t>=1)p.knockback=null;}
+ if(p.power){p.power.ms-=elapsed;if(p.power.ms<=0){if(p.power.kind==='windup')p.power={...p.power,kind:'dash',ms:T.dashMs};else p.power=null;}}
+}
+function collectShoves(m,inputs,consumed){
+ const attempts=[];
+ for(const p of m.players){
+  const input=inputs.get(p.id)||neutral();
+  if(consumed.has(p.id)||!(input.pressed&A.PASS)||!(input.turboActions&A.PASS)||(m.ball.mode==='held'&&m.ball.holder===p.id)||p.stunMs||p.recoveryMs||p.cooldownMs)continue;
+  consumed.add(p.id);
+  if(p.turbo<T.shoveCost){emit(m,'feedback',p.id,{text:'Need 25 turbo to shove'});continue;}
+  const n=Math.hypot(input.x,input.y),dx=n?input.x/n:p.facing,dy=n?input.y/n:0;
+  const victim=m.players.filter(q=>q.team!==p.team&&q.z<=3&&!q.stunMs&&!q.shoveProtectionMs&&dist(p,q)<=T.shoveRange&&((q.x-p.x)*dx+(q.y-p.y)*dy)>=dist(p,q)*.5).sort((a,b)=>dist(p,a)-dist(p,b)||a.id-b.id)[0];
+  attempts.push({p,victim,dx,dy});
+ }
+ // All attempts are accepted before their hits are applied: simultaneous trades.
+ for(const {p,victim,dx,dy} of attempts){p.turbo-=T.shoveCost;p.cooldownMs=T.shoveCooldownMs;p.recoveryMs=T.shoveRecoveryMs;clearCharge(p);p.shoveDirection={x:dx,y:dy};if(Math.abs(dx)>.1)p.facing=dx>0?1:-1;pose(p,'shove',T.shoveRecoveryMs);emit(m,'shove',p.id,{victim:victim?.id??null});}
+ for(const {p,victim:q,dx,dy} of attempts){
+  if(!q||q.stunMs)continue;
+  const n=dist(p,q),away={x:n?(q.x-p.x)/n:dx,y:n?(q.y-p.y)/n:dy};
+  q.stunMs=T.shoveStunMs;q.shoveProtectionMs=T.shoveStunMs+T.shoveProtectionMs;q.jumpMs=0;q.z=0;clearCharge(q);pose(q,'stagger',T.shoveStunMs);
+  q.knockback={start:{x:q.x,y:q.y},end:{x:q.x+away.x*T.knockbackDistance,y:q.y+away.y*T.knockbackDistance},elapsed:0,duration:T.knockbackMs};
+  if(m.ball.mode==='held'&&m.ball.holder===q.id){m.ball={mode:'loose',x:q.x,y:q.y,z:2,vx:away.x*8,vy:away.y*8,vz:3,lastTeam:p.team};m.lastPass=null;}
+ }
 }
 function toss(m){m.phase='live';m.possessionTeam=null;m.shotClockMs=T.shotClockMs;m.ball={mode:'loose',x:50,y:28,z:12,vx:(random(m)-.5)*2,vy:0,vz:0,lastTeam:null};}
 function finishRegulation(m){
@@ -95,6 +129,7 @@ function signature(m,p,input){
  if(p.ability==='dash'){const n=Math.hypot(input.x,input.y);p.power={kind:'windup',ms:T.dashWindupMs,dx:n?input.x/n:p.facing,dy:n?input.y/n:0};}
  else if(p.ability==='pass')pass(m,p,'signature');
  else p.power={kind:p.ability,ms:T.powerMs};
+ return p.ability==='dash'||p.ability==='pass';
 }
 function updateBall(m){
  const b=m.ball;
@@ -136,28 +171,25 @@ export function stepMatch(m,inputs=new Map()){
    const p=m.players.find(p=>p.team===team);p.y=28;m.phase='live';m.possessionTeam=null;possess(m,p);
   }}return;
  }
+ for(const p of m.players)advancePlayerState(p,DT,m.players);
+ const consumed=new Set();
+ for(const p of m.players){const input=inputs.get(p.id)||neutral();if(m.phase==='live'&&!p.stunMs&&!p.recoveryMs&&(input.pressed&A.SPECIAL)&&signature(m,p,input))consumed.add(p.id);}
+ if(m.phase==='live')collectShoves(m,inputs,consumed);
  for(const p of m.players){
-  p.ageMs+=ms;p.cooldownMs=Math.max(0,p.cooldownMs-ms);p.stunMs=Math.max(0,p.stunMs-ms);p.actionMs=Math.max(0,p.actionMs-ms);
-  p.jumpMs=Math.max(0,p.jumpMs-ms);p.z=p.jumpMs>0?Math.sin(Math.PI*(1-p.jumpMs/(p.action==='dunk'?800:700)))*12:0;
-  const input=inputs.get(p.id)||neutral();
-  if(p.power){p.power.ms-=ms;if(p.power.ms<=0){if(p.power.kind==='windup')p.power={...p.power,kind:'dash',ms:T.dashMs};else p.power=null;}}
-  if(m.phase==='live'&&!p.stunMs&&(input.pressed&A.SPECIAL))signature(m,p,input);
-  movePlayer(p,input,DT,m.players);
-  if(!p.actionMs) p.action=Math.hypot(p.vx,p.vy)>1?(m.ball.holder===p.id?'dribble':'run'):'idle';
-  const owns=m.ball.mode==='held'&&m.ball.holder===p.id;
-  if(m.phase==='live'&&p.stunMs===0){
-   if(owns){
-    if(input.pressed&A.PASS){pass(m,p,input.turboActions&A.PASS?'turbo':'normal');continue;}
-    if(input.held&A.SHOOT)p.chargeMs+=ms;
-    if(input.released&A.SHOOT)releaseShot(m,p);
-    else if(p.chargeMs>=T.maxChargeMs)releaseShot(m,p,true);
-    else if(!(input.held&A.SHOOT))p.chargeMs=0;
-   }else if((input.pressed&A.PASS)&&!p.cooldownMs){
-    p.cooldownMs=p.stealRecoveryMs;pose(p,'stagger',220);
-    if(m.ball.mode==='held'){const q=m.players[m.ball.holder];if(q.team!==p.team&&dist(p,q)<T.stealRange&&(q.x-p.x)*p.facing>=0){q.stunMs=350;q.chargeMs=0;q.power=null;pose(q,'stagger',350);possess(m,p);emit(m,'steal',p.id);}}
-   }
+  const input=inputs.get(p.id)||neutral(),owns=m.ball.mode==='held'&&m.ball.holder===p.id;
+  if(!consumed.has(p.id)&&!p.stunMs&&!p.recoveryMs){
+   if(m.phase==='live'&&owns){
+    if(input.pressed&A.PASS)pass(m,p,input.turboActions&A.PASS?'turbo':'normal');
+    else {if(input.held&A.SHOOT)p.chargeMs+=ms;if(input.released&A.SHOOT)releaseShot(m,p);else if(p.chargeMs>=T.maxChargeMs)releaseShot(m,p,true);else if(!(input.held&A.SHOOT))p.chargeMs=0;}
+   }else if(!owns&&(input.pressed&A.PASS)){
+    if(m.phase==='live'&&!p.cooldownMs&&!(input.turboActions&A.PASS)){
+     p.cooldownMs=p.stealRecoveryMs;pose(p,'stagger',220);
+     if(m.ball.mode==='held'){const q=m.players[m.ball.holder];if(q.team!==p.team&&dist(p,q)<T.stealRange&&(q.x-p.x)*p.facing>=0){q.stunMs=350;clearCharge(q);pose(q,'stagger',350);possess(m,p);emit(m,'steal',p.id);}}
+    }
+   }else if(!owns&&(input.pressed&A.SHOOT)&&!p.cooldownMs){p.cooldownMs=T.blockRecoveryMs;p.jumpMs=700;pose(p,'block',700);}
   }
-  if(!owns&&(input.pressed&A.SHOOT)&&!p.cooldownMs){p.cooldownMs=T.blockRecoveryMs;p.jumpMs=700;pose(p,'block',700);}
+  movePlayer(p,input,DT,m.players);
+  if(!p.actionMs)p.action=Math.hypot(p.vx,p.vy)>1?(m.ball.holder===p.id?'dribble':'run'):'idle';
  }
  updateBall(m);
  if(m.phase!=='live'&&m.phase!=='buzzer')return;
